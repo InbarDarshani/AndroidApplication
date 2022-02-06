@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00FFFFFF</color>
+    <color name="peach_pink_3">#f85f6a</color>
+    <color name="peach_pink_2">#F8848D</color>
+    <color name="peach_pink_1">#FF8A80</color>
+    <color name="turquoise_green_3">#4DB6AC</color>
+    <color name="turquoise_green_2">#80CBC4</color>
+    <color name="turquoise_green_1">#B2DFDB</color>
+    <color name="peach_orange_300">#FF8A65</color>
+    <color name="peach_orange_200">#FFAB91</color>
+    <color name="peach_orange_100">#FFCCBC</color>
+    <color name="aqua_blue_300">#4DD0E1</color>
+    <color name="aqua_blue_200">#80DEEA</color>
+    <color name="aqua_blue_100">#B2EBF2</color>
+
+    <color name="placeholder">#d1d6db</color>
+    <color name="dark">#35424a</color>
+    <color name="cream">#faf5de</color>
+    <color name="beige">#c0b0a8</color>
+    <color name="darkBeige">#b19f9d</color>
+    <color name="pink">#e56065</color>
+    <color name="darkPurple">#B3743459</color>
+    <color name="lightPurple">#85687e</color>
+
+</resources>

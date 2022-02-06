@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base application theme -->
+    <style name="Theme.Mixtape" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/lightPurple</item>
+        <item name="colorSecondary">@color/darkPurple</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/white</item>
+        <item name="colorAccent">@color/beige</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="fontFamily">@font/family_quicksand</item>
+        <item name="android:fontFamily">@font/family_quicksand</item>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
+    </style>
+
+    <!--Top Toolbar-->
+    <style name="Widget.Mixtape.TopToolbar" parent="Widget.Material3.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.Mixtape.Toolbar</item>
+        <item name="titleMarginBottom">15dp</item>
+        <item name="titleMarginStart">25dp</item>
+        <item name="titleMarginEnd">25dp</item>
+        <item name="android:background">@color/beige</item>
+        <item name="android:drawablePadding">20dp</item>
+    </style>
+    <style name="TextAppearance.Mixtape.Toolbar" parent="">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <!--Bottom Navigation Bar-->
+    <style name="Widget.Mixtape.BottomNavlbar" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:background">@color/beige</item>
+        <item name="labelVisibilityMode">unlabeled</item>
+        <item name="itemIconTint">@color/white</item>
+        <item name="itemIconSize">30dp</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Mixtape.BottomNavlbar.ItemActiveIndicator</item>
+    </style>
+    <style name="Widget.Mixtape.BottomNavlbar.ItemActiveIndicator" parent="">
+        <item name="android:color">@color/transparent</item>
+    </style>
+
+    <!--Buttons-->
+    <style name="Widget.Mixtape.Button" parent="Widget.Material3.Button">
+        <!--        <item name="android:textColor">@color/darkPurple</item>-->
+        <!--        <item name="backgroundTint">@color/beige</item>-->
+    </style>
+
+    <style name="Widget.Mixtape.Button.TextButton" parent="Widget.Material3.Button.TextButton">
+        <!--        <item name="android:textColor">@color/darkPurple</item>-->
+    </style>
+
+    <!--Text Input-->
+    <style name="Widget.Mixtape.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <!--        <item name="hintTextColor">@color/textColorPrimary</item>-->
+        <!--        <item name="android:paddingBottom">8dp</item>-->
+        <!--        <item name="boxStrokeColor">@color/lightPurple</item>-->
+    </style>
+
+
+
+</resources>
