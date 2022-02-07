@@ -26,8 +26,8 @@ public class Model {
 
     private Model() {
         //Set data loading states
-        feedLoadingState.setValue(state.loaded);
-        profileLoadingState.setValue(state.loaded);
+        feedLoadingState.setValue(FeedState.loaded);
+        profileLoadingState.setValue(ProfileState.loaded);
     }
 
     //_________________________ Data Holders _________________________
@@ -63,20 +63,25 @@ public class Model {
 
     //_________________________ Data Loading States _________________________
     // properties for representing the loading state of each LiveData
-    public enum state {
+    public enum FeedState {
         loading,
         loaded
     }
 
-    MutableLiveData<state> feedLoadingState = new MutableLiveData<>();
+    public enum ProfileState {
+        loading,
+        loaded
+    }
 
-    public MutableLiveData<state> getFeedLoadingState() {
+    MutableLiveData<FeedState> feedLoadingState = new MutableLiveData<>();
+
+    public MutableLiveData<FeedState> getFeedLoadingState() {
         return feedLoadingState;
     }
 
-    MutableLiveData<state> profileLoadingState = new MutableLiveData<>();
+    MutableLiveData<ProfileState> profileLoadingState = new MutableLiveData<>();
 
-    public MutableLiveData<state> getProfileLoadingState() {
+    public MutableLiveData<ProfileState> getProfileLoadingState() {
         return profileLoadingState;
     }
 
@@ -121,7 +126,7 @@ public class Model {
     //_________________________ Data Refresh Functions _________________________
     // functions for local data refresh on the device
     public void refreshFeed() {
-        feedLoadingState.setValue(state.loading);
+        feedLoadingState.setValue(FeedState.loading);
 
         // get last local update date from the device
         Long lastUpdateDate = MyApplication.getContext().getSharedPreferences("TAG", Context.MODE_PRIVATE).getLong("FeedLastUpdateDate", 0);
@@ -151,13 +156,13 @@ public class Model {
                 //return all data to caller
                 List<Song> newSongs = AppLocalDb.db.songDao().getAll();
                 feed.postValue(newSongs);
-                feedLoadingState.postValue(state.loaded);
+                feedLoadingState.postValue(FeedState.loaded);
             });
         });
     }
 
     public void refreshProfile() {
-        profileLoadingState.setValue(state.loading);
+        profileLoadingState.setValue(ProfileState.loading);
 
         // get last local update date from the device
         Long lastUpdateDate = MyApplication.getContext().getSharedPreferences("TAG", Context.MODE_PRIVATE).getLong("ProfileLastUpdateDate", 0);
@@ -188,7 +193,7 @@ public class Model {
                 //return all data to caller
                 List<Mixtape> newMixtapes = AppLocalDb.db.mixtapeDao().getAll();
                 profile.postValue(newMixtapes);
-                profileLoadingState.postValue(state.loaded);
+                profileLoadingState.postValue(ProfileState.loaded);
             });
         });
     }

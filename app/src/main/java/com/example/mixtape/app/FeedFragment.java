@@ -4,7 +4,9 @@ import android.content.Context;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,6 +24,8 @@ import com.example.mixtape.model.Model;
 import com.example.mixtape.model.Song;
 import com.example.mixtape.viewmodels.FeedViewModel;
 
+import java.util.List;
+
 public class FeedFragment extends Fragment {
     FeedViewModel viewModel;
     RecyclerView list;
@@ -34,13 +38,15 @@ public class FeedFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(FeedViewModel.class);
     }
 
+    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_feed, container, false);
 
-        //Get refresh view and bind data refresh to its listener
+        //Setup refresh view, attach OnRefresh function, set refreshing state according to Model's loading state
         swipeRefresh = view.findViewById(R.id.feed_swiperefresh);
-        swipeRefresh.setOnRefreshListener(() -> Model.instance.refreshFeed());
+        swipeRefresh.setOnRefreshListener(Model.instance::refreshFeed);
+        swipeRefresh.setRefreshing(Model.instance.getFeedLoadingState().getValue() == Model.FeedState.loading);
 
         //Set list and adapter
         list = view.findViewById(R.id.feed_rv);
@@ -57,17 +63,34 @@ public class FeedFragment extends Fragment {
             Navigation.findNavController(v).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment());
         });
 
+        //Setup observer for ViewModel's songs livedata, set OnChange action
+        viewModel.getSongs().observe(getViewLifecycleOwner(), songs -> FeedFragment.this.refresh());
+
+        //Setup observer for Model's feed loading state
+        Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), songsListLoadingState -> {
+            //Change SwipeRefreshLayout according to loading state
+            if (songsListLoadingState == Model.FeedState.loading)
+                swipeRefresh.setRefreshing(true);
+            else
+                swipeRefresh.setRefreshing(false);
+        });
+
         return view;
     }
 
-    //______________________Listeners Interface Wrapper______________________________________
+    //Actions to perform on data refresh in this fragment
+    private void refresh() {
+        adapter.notifyDataSetChanged();
+    }
+
+    //______________________ List Listeners Interface ______________________________________
     //Interface wrapper for a list item listeners
     interface OnItemClickListener {
         void onItemClick(View v, int position);
     }
 
-    //______________________Recycler View Holder Implementation_____________________________
-    //Holds student's row view items and links them to the view resources
+    //______________________ Recycler View Holder Class _____________________________
+    //Holds song's row view items and links them to the view resources
     class RowHolder extends RecyclerView.ViewHolder {
         ImageView feedrow_profile_iv;
         TextView feedrow_user_tv;
@@ -97,7 +120,7 @@ public class FeedFragment extends Fragment {
         }
     }
 
-    //______________________Recycler View Adapter Implementation_____________________________
+    //______________________ Recycler View Adapter Class _____________________________
     //Student list adapter holding also the row listeners
     class ListAdapter extends RecyclerView.Adapter<RowHolder> {
 
@@ -134,7 +157,7 @@ public class FeedFragment extends Fragment {
 
         @Override
         public int getItemCount() {
-            if(viewModel.getSongs().getValue() == null){
+            if (viewModel.getSongs().getValue() == null) {
                 return 0;
             }
             return viewModel.getSongs().getValue().size();

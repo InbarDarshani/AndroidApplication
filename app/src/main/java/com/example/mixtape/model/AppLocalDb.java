@@ -12,9 +12,10 @@ import com.example.mixtape.MyApplication;
 abstract class AppLocalDbRepository extends RoomDatabase {
     public abstract SongDao songDao();
     public abstract MixtapeDao mixtapeDao();
+    public abstract UserDao userDao();
 }
 
-public class AppLocalDb{
+public class AppLocalDb {
     static public AppLocalDbRepository db =
             Room.databaseBuilder(MyApplication.getContext(),
                     AppLocalDbRepository.class,

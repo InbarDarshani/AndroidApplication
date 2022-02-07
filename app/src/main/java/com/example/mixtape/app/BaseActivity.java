@@ -128,7 +128,7 @@ public class BaseActivity extends AppCompatActivity {
         });
     }
 
-    //FIXME: back to exit app
+    //FIXME: back button to exit app not working
     @Override
     public void onBackPressed() {
         super.onBackPressed();
