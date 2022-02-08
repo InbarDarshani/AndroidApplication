@@ -2,6 +2,7 @@ package com.example.mixtape.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import com.google.firebase.auth.FirebaseUser;
@@ -44,6 +45,7 @@ public class User {
     //_________________________ Constructors _________________________
     public User() {}
 
+    @Ignore
     public User(String userId, String email, String displayName, String image) {
         this.userId = userId;
         this.email = email;

@@ -2,6 +2,7 @@ package com.example.mixtape.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import com.google.firebase.Timestamp;
@@ -57,9 +58,9 @@ public class Song {
     }
 
     //_________________________ Constructors _________________________
-    public Song() {
-    }
+    public Song() {}
 
+    @Ignore
     public Song(@NonNull String songId, String name, String artist, String caption, String image, Long timeModified, Long timeCreated, String userId, String mixtapeId) {
         this.songId = songId;
         this.name = name;

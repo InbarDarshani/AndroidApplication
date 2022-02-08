@@ -7,7 +7,7 @@
         <item name="colorPrimary">@color/lightPurple</item>
         <item name="colorSecondary">@color/darkPurple</item>
         <item name="colorSurface">@color/white</item>
-        <item name="colorOnSurface">@color/white</item>
+        <item name="colorOnSurface">@color/darkPurple</item>
         <item name="colorAccent">@color/beige</item>
         <item name="android:colorBackground">@color/white</item>
         <item name="fontFamily">@font/family_quicksand</item>

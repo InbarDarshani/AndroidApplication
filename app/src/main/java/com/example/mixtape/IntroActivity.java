@@ -10,6 +10,7 @@ import com.example.mixtape.login.LoginActivity;
 import com.example.mixtape.model.Model;
 
 import android.widget.ImageView;
+
 import com.bumptech.glide.Glide;
 
 public class IntroActivity extends AppCompatActivity {
@@ -25,19 +26,14 @@ public class IntroActivity extends AppCompatActivity {
 
         Model.instance.executor.execute(() -> {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if (Model.instance.isSignedIn()) {
-                Model.instance.mainThread.post(() -> {
-                    toFeedActivity();
-                });
-            } else {
-                Model.instance.mainThread.post(() -> {
-                    toLoginActivity();
-                });
-            }
+            if (Model.instance.isSignedIn())
+                Model.instance.mainThread.post(this::toFeedActivity);
+            else
+                Model.instance.mainThread.post(this::toLoginActivity);
         });
     }
 

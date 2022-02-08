@@ -24,8 +24,6 @@ import com.example.mixtape.model.Model;
 import com.example.mixtape.model.Song;
 import com.example.mixtape.viewmodels.FeedViewModel;
 
-import java.util.List;
-
 public class FeedFragment extends Fragment {
     FeedViewModel viewModel;
     RecyclerView list;

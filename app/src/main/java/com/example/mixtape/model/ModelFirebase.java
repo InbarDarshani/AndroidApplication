@@ -1,22 +1,16 @@
 package com.example.mixtape.model;
 
-import android.app.Activity;
-import android.net.Uri;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.util.Pair;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -24,8 +18,6 @@ import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
-
 
 //Working with remote service by google - db, userAuth, storage
 
@@ -48,22 +40,57 @@ public class ModelFirebase {
         return (currentUser != null);
     }
 
-    public void signIn(String email, String password, Model.SignIn listener) {
+    public void signIn(String email, String password, Model.UserProcess listener) {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
-                    User u = null;
-                    if (task.isSuccessful()) {
-                        Log.d("TAG", "signInWithEmail:success " + email);
-                        FirebaseUser fbUser = mAuth.getCurrentUser();
-                        //TODO: set display name and image
-                        u = new com.example.mixtape.model.User(fbUser.getUid(),fbUser.getEmail(),"Admin User", "");
-                    } else {
-                        Log.d("TAG", "signInWithEmail:failure " + email, task.getException());
-                    }
-                        listener.onComplete(u);
+                    User u = signInsignUpOnComplete(task);
+                    listener.onComplete(u);
                 });
     }
 
+    public void signUp(String email, String password, Model.UserProcess listener) {
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+                    User u = signInsignUpOnComplete(task);
+                    listener.onComplete(u);
+                });
+    }
+
+    private User signInsignUpOnComplete(Task<AuthResult> task){
+        User u = null;
+        if (task.isSuccessful()) {
+            Log.d("TAG", "signInWithEmail:success ");
+
+            FirebaseUser fbUser = mAuth.getCurrentUser();
+            assert fbUser != null: "FirebaseUser current user is null!";
+            u = new com.example.mixtape.model.User(fbUser.getUid(), fbUser.getEmail(), "Admin User", "");
+            //TODO: set display name and image
+        } else {
+            Log.d("TAG", "signInWithEmail:failure ", task.getException());
+
+            Exception e = task.getException();
+            if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                Model.instance.dbError = "Invalid password";
+            } else if (e instanceof FirebaseAuthInvalidUserException) {
+                String errorCode = ((FirebaseAuthInvalidUserException) e).getErrorCode();
+                switch (errorCode) {
+                    case "ERROR_USER_NOT_FOUND":
+                        Model.instance.dbError = "No matching account found";
+                        break;
+                    case "ERROR_USER_DISABLED":
+                        Model.instance.dbError = "User account has been disabled";
+                        break;
+                    case "ERROR_EMAIL_ALREADY_IN_USE":
+                        Model.instance.dbError = "Email is already in use";
+                        break;
+                    default:
+                        Model.instance.dbError = e.getMessage();
+                        break;
+                }
+            }
+        }
+        return u;
+    }
 
     //_________________________ STORAGE ____________________________________________________________
     //TODO

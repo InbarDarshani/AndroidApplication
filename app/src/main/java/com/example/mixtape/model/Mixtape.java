@@ -2,6 +2,7 @@ package com.example.mixtape.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import com.google.firebase.Timestamp;
@@ -53,6 +54,7 @@ public class Mixtape {
     //_________________________ Constructors _________________________
     public Mixtape() {}
 
+    @Ignore
     public Mixtape(String mixtapeId, String name, String description, Long timeModified, Long timeCreated, String userId) {
         this.mixtapeId = mixtapeId;
         this.name = name;

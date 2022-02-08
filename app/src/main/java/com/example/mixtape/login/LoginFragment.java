@@ -4,7 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
 
 import android.util.Patterns;
 import android.view.LayoutInflater;
@@ -12,66 +12,108 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import com.example.mixtape.R;
 import com.example.mixtape.app.BaseActivity;
 import com.example.mixtape.model.Model;
-import com.example.mixtape.model.User;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LoginFragment extends Fragment {
-    View view;
     String emailInput;
     String passwordInput;
+    MaterialAlertDialogBuilder alert;
+    TextView titleTv;
+    Button submitBtn;
+    Button secondaryBtn;
+    Button backBtn;
+    boolean newUser = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         //Inflate the layout for this fragment
-        view = inflater.inflate(R.layout.fragment_login, container, false);
+        View view = inflater.inflate(R.layout.fragment_login, container, false);
+
+        //Get views
+        submitBtn = view.findViewById(R.id.login_submit_btn);
+        secondaryBtn = view.findViewById(R.id.login_createaccount_btn);
+        backBtn = view.findViewById(R.id.login_back_btn);
+        titleTv = view.findViewById(R.id.title_tv);
+
+        //Setup alert dialog
+        alert = new MaterialAlertDialogBuilder(this.getContext());
+        alert.setTitle("Login Error");
+
+        //Set LoginState Observer
+        Model.instance.getUserLoginState().observeForever(new Observer<Model.LoginState>() {
+            @Override
+            public void onChanged(Model.LoginState loginState) {
+                if (loginState == Model.LoginState.error)
+                    alert.setMessage(Model.instance.dbError).show();
+                if (loginState == Model.LoginState.completed)
+                    toFeedActivity();
+            }
+        });
+
+        //CreateAccount button setup - edit view to sign-up screen
+        secondaryBtn.setOnClickListener(v -> {
+            newUser = true;
+            titleTv.setText("Create a Mixtaper Account");
+            secondaryBtn.setVisibility(View.GONE);
+            backBtn.setVisibility(View.VISIBLE);
+        });
+
+        //Back button setup - edit view back to sign-in screen
+        backBtn.setOnClickListener(v -> {
+            newUser = false;
+            titleTv.setText("Welcome To Mixtape App!");
+            secondaryBtn.setVisibility(View.VISIBLE);
+            backBtn.setVisibility(View.GONE);
+        });
 
         //Login button setup
-        Button loginBtn = view.findViewById(R.id.login_login_btn);
-        loginBtn.setOnClickListener(v -> {
+        submitBtn.setOnClickListener(v -> {
             emailInput = ((EditText) view.findViewById(R.id.login_email_et)).getText().toString();
             passwordInput = ((EditText) view.findViewById(R.id.login_password_et)).getText().toString();
 
-            if (validateInput() && authenticate()) {
-                toFeedActivity();
-            }
+            if (validateInput())
+                //Perform sign-in or sign-up
+                Model.instance.signInsignUp(emailInput, passwordInput, newUser);
         });
+
         return view;
     }
 
     private void toFeedActivity() {
         Intent intent = new Intent(getContext(), BaseActivity.class);
         startActivity(intent);
-        getActivity().finish();
+        requireActivity().finish();
     }
 
     private boolean validateInput() {
         if (emailInput.isEmpty() || passwordInput.isEmpty()) {
-            Toast.makeText(this.getContext(), "Please fill both email and password", Toast.LENGTH_SHORT).show();
+            alert.setMessage("Please fill both email and password").show();
             return false;
         }
 
         if (!Patterns.EMAIL_ADDRESS.matcher(emailInput).matches()) {
-            Toast.makeText(this.getContext(), "Please fill proper email address", Toast.LENGTH_SHORT).show();
+            alert.setMessage("Please fill proper email address").show();
             return false;
         }
-        return true;
-    }
 
-    private boolean authenticate() {
-        //Perform sign in
-        Model.instance.signIn(emailInput, passwordInput);
-        //"Wait" for result
-        LiveData<User> u = Model.instance.getUser();
-        if (u == null){
-            Toast.makeText(this.getContext(), "Authentication failed", Toast.LENGTH_SHORT).show();
-            return false;
+        if (newUser) {
+            Pattern requirements = Pattern.compile("^(?=.*[A-Za-z])(?=.*[0-9]).{6,}$");
+            Matcher matcher = requirements.matcher(passwordInput);
+            if (!matcher.matches()) {
+                alert.setMessage("Password must be at least 6 characters\nPassword must contain at east one digit\nPassword must contain at least one character").show();
+                return false;
+            }
         }
+
         return true;
     }
 }

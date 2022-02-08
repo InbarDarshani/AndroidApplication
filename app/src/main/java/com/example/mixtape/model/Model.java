@@ -24,45 +24,83 @@ public class Model {
     public Handler mainThread = HandlerCompat.createAsync(Looper.getMainLooper());
     ModelFirebase modelFirebase = new ModelFirebase();
 
+    public String dbError = "";
+
     private Model() {
         //Set data loading states
         feedLoadingState.setValue(FeedState.loaded);
         profileLoadingState.setValue(ProfileState.loaded);
+        userLoginState.setValue(LoginState.none);
     }
 
     //_________________________ Data Holders _________________________
     MutableLiveData<List<Song>> feed = new MutableLiveData<>();
     MutableLiveData<List<Mixtape>> profile = new MutableLiveData<>();
-    MutableLiveData<User> user = new MutableLiveData<User>();
+
+    //_________________________ User Login States _________________________
+    public enum LoginState {
+        none,
+        inprogress,
+        completed,
+        error
+    }
+
+    MutableLiveData<LoginState> userLoginState = new MutableLiveData<>();
+
+    public MutableLiveData<LoginState> getUserLoginState() {
+        return userLoginState;
+    }
 
     //_________________________ User Functions _________________________
+
     public boolean isSignedIn() {
         return modelFirebase.isSignedIn();
     }
 
-    public void signIn(String email, String password) {
+    public void signInsignUp(String email, String password, boolean newUser) {
+        userLoginState.setValue(LoginState.inprogress);
+
+        //Sign up with firebase
+        if (newUser) {
+            modelFirebase.signUp(email, password, user -> {
+                if (user == null) {
+                    userLoginState.setValue(LoginState.error);
+                } else {
+                    saveUser(user);
+                    userLoginState.setValue(LoginState.completed);
+                }
+            });
+            return;
+        }
+
         //Sign in with firebase
-        modelFirebase.signIn(email, password, (SignIn) (user) -> {
-            //Post user from firebase to livedata observers
-            this.user.postValue(user);
-            if (user != null) {
-                //Update user details in device's shared preferences
-                executor.execute(() -> {
-                    MyApplication.getContext()
-                            .getSharedPreferences("TAG", Context.MODE_PRIVATE)
-                            .edit()
-                            .putString("UserId", user.userId)
-                            .putString("UserDisplayName", user.displayName)
-                            .putString("UserEmail", user.email)
-                            .commit();
-                    //TODO: save user's image in device local db
-                });
+        modelFirebase.signIn(email, password, user -> {
+            if (user == null) {
+                userLoginState.setValue(LoginState.error);
+            } else {
+                saveUser(user);
+                userLoginState.setValue(LoginState.completed);
             }
         });
     }
 
+    //TODO: Save all in local db instead?
+    //Update user details in device's shared preferences
+    private void saveUser(User user) {
+        executor.execute(() -> {
+            MyApplication.getContext()
+                    .getSharedPreferences("TAG", Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("UserId", user.userId)
+                    .putString("UserDisplayName", user.displayName)
+                    .putString("UserEmail", user.email)
+                    .commit();
+            //TODO: save user's image in device local db
+        });
+    }
+
     //_________________________ Data Loading States _________________________
-    // properties for representing the loading state of each LiveData
+    //properties for representing the loading state of each LiveData
     public enum FeedState {
         loading,
         loaded
@@ -85,11 +123,8 @@ public class Model {
         return profileLoadingState;
     }
 
-    //_________________________ Data Actions Functions _________________________
-    // functions for data getters and setters
-    public LiveData<User> getUser() {
-        return user;
-    }
+    //_________________________ Data Functions _________________________
+    //functions for data getters and setters
 
     public LiveData<List<Song>> getFeed() {
         if (feed.getValue() == null) {
@@ -124,7 +159,7 @@ public class Model {
     }
 
     //_________________________ Data Refresh Functions _________________________
-    // functions for local data refresh on the device
+    //functions for local data refresh on the device
     public void refreshFeed() {
         feedLoadingState.setValue(FeedState.loading);
 
@@ -199,7 +234,7 @@ public class Model {
     }
 
     //_________________________ Listener Interfaces _________________________
-    // interface for each remote data fetching\pushing action wrapping its events
+    //interface for each remote data fetching\pushing action wrapping its events
 
     public interface GetSongs {
         void onComplete(List<Song> list);
@@ -225,7 +260,7 @@ public class Model {
         void onComplete();
     }
 
-    public interface SignIn {
+    public interface UserProcess {
         void onComplete(User user);
     }
 
