@@ -6,7 +6,6 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -19,10 +18,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.example.mixtape.MyApplication;
 import com.example.mixtape.R;
 import com.example.mixtape.model.Model;
-import com.example.mixtape.model.Song;
+import com.example.mixtape.model.SongItem;
 import com.example.mixtape.viewmodels.FeedViewModel;
+import com.squareup.picasso.Picasso;
 
 public class FeedFragment extends Fragment {
     FeedViewModel viewModel;
@@ -49,28 +50,25 @@ public class FeedFragment extends Fragment {
         //Set list and adapter
         list = view.findViewById(R.id.feed_rv);
         list.setHasFixedSize(true);
-        list.setLayoutManager(new LinearLayoutManager(getContext()));
+        list.setLayoutManager(new LinearLayoutManager(MyApplication.getContext()));
         adapter = new ListAdapter();
         list.setAdapter(adapter);
 
         //Create the row items listeners actions
         adapter.setOnItemClickListener((v, position) -> {
             //get song item from view model
-            String sId = viewModel.getSongs().getValue().get(position).getSongId();
+            String sId = viewModel.getSongItems().getValue().get(position).song.getSongId();
             //navigate to sod details page
-            Navigation.findNavController(v).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment());
+            Navigation.findNavController(v).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment(sId));
         });
 
-        //Setup observer for ViewModel's songs livedata, set OnChange action
-        viewModel.getSongs().observe(getViewLifecycleOwner(), songs -> FeedFragment.this.refresh());
+        //Setup observer for ViewModel's livedata, set OnChange action
+        viewModel.getSongItems().observe(getViewLifecycleOwner(), feedItems -> FeedFragment.this.refresh());
 
         //Setup observer for Model's feed loading state
-        Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), songsListLoadingState -> {
+        Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), feedLoadingState -> {
             //Change SwipeRefreshLayout according to loading state
-            if (songsListLoadingState == Model.FeedState.loading)
-                swipeRefresh.setRefreshing(true);
-            else
-                swipeRefresh.setRefreshing(false);
+            swipeRefresh.setRefreshing(feedLoadingState == Model.FeedState.loading);
         });
 
         return view;
@@ -116,6 +114,23 @@ public class FeedFragment extends Fragment {
                 listener.onItemClick(v, pos);
             });
         }
+
+        void bind(SongItem songItem) {
+            //Bind Mixtape data of this song post
+            feedrow_mixtape_tv.setText(songItem.mixtape.getName());
+
+            //Bind User data of this song post
+            if (!songItem.user.getImage().isEmpty())
+                Picasso.get().load(songItem.user.getImage()).into(feedrow_profile_iv);
+            feedrow_user_tv.setText(songItem.user.getDisplayName());
+
+            //Bind song's data
+            if (!songItem.song.getImage().isEmpty())
+                Picasso.get().load(songItem.song.getImage()).into(feedrow_photo_iv);
+            feedrow_song_tv.setText(songItem.song.getName());
+            feedrow_artist_tv.setText(songItem.song.getArtist());
+            feedrow_caption_tv.setText(songItem.song.getCaption());
+        }
     }
 
     //______________________ Recycler View Adapter Class _____________________________
@@ -141,24 +156,15 @@ public class FeedFragment extends Fragment {
         @Override
         //Settings for when binding the view items and view resources
         public void onBindViewHolder(@NonNull RowHolder holder, int position) {
-            Song song = viewModel.getSongs().getValue().get(position);
-            //TODO: Set images
-            //holder.feedrow_profile_iv.setImageResource(song.getUser().getImage);
-            //holder.feedrow_photo_iv.setImageResource(song.getImage());
-            holder.feedrow_song_tv.setText(song.getName());
-            holder.feedrow_artist_tv.setText(song.getArtist());
-            holder.feedrow_caption_tv.setText(song.getCaption());
-            //TODO: Set relations
-            //holder.feedrow_user_tv.setText(song.getUser().getFullName());
-            //holder.feedrow_mixtape_tv.setText(Model.instance.getMixtapeOfSong(song).getName());
+            SongItem songItem = viewModel.getSongItems().getValue().get(position);
+            holder.bind(songItem);
         }
 
         @Override
         public int getItemCount() {
-            if (viewModel.getSongs().getValue() == null) {
+            if (viewModel.getSongItems().getValue() == null)
                 return 0;
-            }
-            return viewModel.getSongs().getValue().size();
+            return viewModel.getSongItems().getValue().size();
         }
     }
 }

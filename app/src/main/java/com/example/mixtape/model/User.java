@@ -12,16 +12,15 @@ import java.util.Map;
 
 @Entity
 public class User {
-    final public static String COLLECTION_NAME = "users";
-
+    public final static String COLLECTION_NAME = "users";
+    
     //Properties
     @PrimaryKey
     @NonNull
-    String userId = "";
-    String email = "";
-    String displayName = "";
-    //TODO: setup profile picture upload 
-    String image = "";
+    public String userId = "";
+    public String email = "";
+    public String displayName = "";
+    public String image = "";
 
     //_________________________ Functions _________________________
     public Map<String, Object> toJson() {
@@ -68,6 +67,14 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = email;
     }
 
     public String getImage() {

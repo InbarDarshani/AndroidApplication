@@ -19,6 +19,7 @@
             android:id="@+id/toolbar_top"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            app:menu="@menu/menu_top_bar"
             style="@style/Widget.Mixtape.TopToolbar"
             app:logo="@drawable/ic_logo_label_white" />
 

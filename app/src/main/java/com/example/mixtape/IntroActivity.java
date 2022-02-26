@@ -1,17 +1,20 @@
 package com.example.mixtape;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.example.mixtape.app.BaseActivity;
 import com.example.mixtape.login.LoginActivity;
+import com.example.mixtape.model.Mixtape;
 import com.example.mixtape.model.Model;
+import com.example.mixtape.model.Song;
 
-import android.widget.ImageView;
-
-import com.bumptech.glide.Glide;
+import java.util.Map;
 
 public class IntroActivity extends AppCompatActivity {
 
@@ -20,13 +23,9 @@ public class IntroActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_intro);
 
-        // Adding the gif here using glide library
-        ImageView gif = findViewById(R.id.mixtape_gif_iv);
-        Glide.with(this).load(R.drawable.mixtape_loader).into(gif);
-
         Model.instance.executor.execute(() -> {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(4000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -48,4 +47,5 @@ public class IntroActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
+
 }

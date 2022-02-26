@@ -7,18 +7,27 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import java.util.List;
+import java.util.Map;
 
 @Dao
 public interface MixtapeDao {
 
-    @Query("select * from Mixtape")
+    @Query("SELECT * FROM Mixtape")
     List<Mixtape> getAll();
 
+    @Query("SELECT * FROM Mixtape WHERE mixtapeId = :mixtapeId")
+    Mixtape getOneById(String mixtapeId);
+
+    @Query("SELECT * FROM Mixtape WHERE mixtapeId IN(:mixtapeIds)")
+    List<Mixtape> getManyByIds(List<String> mixtapeIds);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertMany(Mixtape... mixtapes);
+    void insertMultiple(Mixtape... mixtapes);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertMany(List<Mixtape> mixtapes);
 
     @Delete
     void delete(Mixtape mixtape);
-
 
 }

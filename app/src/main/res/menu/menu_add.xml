@@ -3,12 +3,12 @@
     <item
         android:id="@+id/new_song"
         android:contentDescription="New Song"
-        android:icon="@drawable/ic_fluent_add_square_24_filled"
+        android:icon="@drawable/ic_add_filled"
         android:title="Create New Song Post" />
 
     <item
         android:id="@+id/new_mixtape"
         android:contentDescription="New Mixtape"
-        android:icon="@drawable/ic_fluent_add_square_24_filled"
+        android:icon="@drawable/ic_add_filled"
         android:title="Create New Mixtape" />
 </menu>

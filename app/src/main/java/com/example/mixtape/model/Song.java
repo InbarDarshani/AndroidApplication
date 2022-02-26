@@ -13,22 +13,22 @@ import java.util.Map;
 
 @Entity
 public class Song {
-    final public static String COLLECTION_NAME = "songs";
+    public final static String COLLECTION_NAME = "songs";
 
     //Properties
     @PrimaryKey
     @NonNull
-    String songId = "";
-    String name = "";
-    String artist = "";
-    String caption = "";
-    String image = "";       //TODO:
-    Long timeModified = new Long(0);
-    Long timeCreated = new Long(0);
+    public String songId = "";
+    public String name = "";
+    public String artist = "";
+    public String caption = "";
+    public String image = "";                            //TODO:
+    public Long timeModified = new Long(0);
+    public Long timeCreated = new Long(0);
 
     //Relations
-    String userId = "";      //The User created this song post
-    String mixtapeId = "";   //The containing mixtape of this song
+    public String userId = "";      //The User created this song post
+    public String mixtapeId = "";   //The containing mixtape of this song
 
     //_________________________ Functions _________________________
     public Map<String, Object> toJson() {
@@ -41,6 +41,7 @@ public class Song {
         json.put("timeModified", FieldValue.serverTimestamp());
         json.put("timeCreated", FieldValue.serverTimestamp());
         json.put("userId", userId);
+        json.put("mixtapeId", mixtapeId);
         return json;
     }
 
@@ -50,27 +51,37 @@ public class Song {
         String artist = (String) json.get("artist");
         String caption = (String) json.get("caption");
         String image = (String) json.get("image");
-        Timestamp timeModified = (Timestamp) json.get("timeModified");
-        Timestamp timeCreated = (Timestamp) json.get("timeCreated");
+        Long timeModified = ((Timestamp) json.get("timeModified")).getSeconds();
+        Long timeCreated = ((Timestamp) json.get("timeCreated")).getSeconds();
         String userId = (String) json.get("userId");
         String mixtapeId = (String) json.get("mixtapeId");
-        return new Song(songId, name, artist, caption, image, timeModified.getSeconds(), timeCreated.getSeconds(), userId, mixtapeId);
+
+        Song song = new Song(name, artist, caption, image);
+        song.setSongId(songId);
+        song.setTimeModified(timeModified);
+        song.setTimeCreated(timeCreated);
+        song.setUserId(userId);
+        song.setMixtapeId(mixtapeId);
+        return song;
     }
 
     //_________________________ Constructors _________________________
-    public Song() {}
+    public Song() {
+    }
 
     @Ignore
-    public Song(@NonNull String songId, String name, String artist, String caption, String image, Long timeModified, Long timeCreated, String userId, String mixtapeId) {
-        this.songId = songId;
+    public Song(String name, String artist, String caption) {
+        this.name = name;
+        this.artist = artist;
+        this.caption = caption;
+    }
+
+    @Ignore
+    public Song(String name, String artist, String caption, String image) {
         this.name = name;
         this.artist = artist;
         this.caption = caption;
         this.image = image;
-        this.timeModified = timeModified;
-        this.timeCreated = timeCreated;
-        this.userId = userId;
-        this.mixtapeId = mixtapeId;
     }
 
     //_________________________ Getters & Setters _________________________
@@ -146,5 +157,4 @@ public class Song {
     public void setMixtapeId(String mixtapeId) {
         this.mixtapeId = mixtapeId;
     }
-
 }

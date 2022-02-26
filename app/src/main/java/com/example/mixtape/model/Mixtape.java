@@ -10,24 +10,23 @@ import com.google.firebase.firestore.FieldValue;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Entity
 public class Mixtape {
-    final public static String COLLECTION_NAME = "mixtapes";
+    public final static String COLLECTION_NAME = "mixtapes";
 
     //Properties
     @PrimaryKey
     @NonNull
-    String mixtapeId = "";
-    String name = "";
-    String description = "";
-    Long timeModified = new Long( 0);
-    Long timeCreated = new Long( 0);
+    public String mixtapeId = "";
+    public String name = "";
+    public String description = "";
+    public Long timeModified = new Long( 0);
+    public Long timeCreated = new Long( 0);
 
     //Relations
-    String userId = "";      //The User created this mixtape
-    //List<String> songsIds = new ArrayList<>(); //The songs in this mixtape
-
+    public String userId = "";      //The User created this mixtape
 
     //_________________________ Functions _________________________
     public Map<String, Object> toJson() {
@@ -45,23 +44,25 @@ public class Mixtape {
         String mixtapeId = (String) json.get("mixtapeId");
         String name = (String) json.get("name");
         String description = (String) json.get("description");
-        Timestamp timeModified = (Timestamp) json.get("timeModified");
-        Timestamp timeCreated = (Timestamp) json.get("timeCreated");
+        Long timeModified = ((Timestamp) json.get("timeModified")).getSeconds();
+        Long timeCreated = ((Timestamp) json.get("timeCreated")).getSeconds();
         String userId = (String) json.get("userId");
-        return new Mixtape(mixtapeId, name, description, timeModified.getSeconds(), timeCreated.getSeconds(), userId);
+
+        Mixtape mixtape = new Mixtape(name, description);
+        mixtape.setMixtapeId(mixtapeId);
+        mixtape.setTimeModified(timeModified);
+        mixtape.setTimeCreated(timeCreated);
+        mixtape.setUserId(userId);
+        return mixtape;
     }
 
     //_________________________ Constructors _________________________
     public Mixtape() {}
 
     @Ignore
-    public Mixtape(String mixtapeId, String name, String description, Long timeModified, Long timeCreated, String userId) {
-        this.mixtapeId = mixtapeId;
+    public Mixtape(String name, String description) {
         this.name = name;
         this.description = description;
-        this.timeModified = timeModified;
-        this.timeCreated = timeCreated;
-        this.userId = userId;
     }
 
     //_________________________ Getters & Setters _________________________
@@ -112,5 +113,4 @@ public class Mixtape {
     public void setUserId(String userId) {
         this.userId = userId;
     }
-
 }

@@ -1,8 +1,7 @@
 package com.example.mixtape.model;
 
+import android.graphics.Bitmap;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
@@ -11,20 +10,29 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 //Working with remote service by google - db, userAuth, storage
 
 public class ModelFirebase {
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();     //For working with database
-    private FirebaseAuth mAuth = FirebaseAuth.getInstance();            //For working with user authentication
-    private FirebaseStorage storage = FirebaseStorage.getInstance();    //For working with images storage
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();     //For working with database
+    private final FirebaseAuth mAuth = FirebaseAuth.getInstance();            //For working with user authentication
+    private final FirebaseStorage storage = FirebaseStorage.getInstance();    //For working with images storage
 
     public ModelFirebase() {
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
@@ -33,127 +41,251 @@ public class ModelFirebase {
         db.setFirestoreSettings(settings);
     }
 
-    //_________________________ AUTHENTICATION _____________________________________________________
-    public boolean isSignedIn() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        Log.d("TAG", "isSignedIn check: " + currentUser);
-        return (currentUser != null);
+    /*____________________________________________________________________________________________*/
+    /*______________________________________ AUTHENTICATION ______________________________________*/
+    /*____________________________________________________________________________________________*/
+    public FirebaseUser getCurrentUser() {
+        return mAuth.getCurrentUser();
     }
 
     public void signIn(String email, String password, Model.UserProcess listener) {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
-                    User u = signInsignUpOnComplete(task);
-                    listener.onComplete(u);
+                    if (!task.isSuccessful()) {
+                        Log.d("TAG", "Firebase - sign-in failed");
+                        signInsignUpError(task);
+                        listener.onComplete(null);
+                        return;
+                    }
+                    Log.d("TAG", "Firebase - sign-in success");
+                    //Get User object
+                    String userId = mAuth.getCurrentUser().getUid();
+                    this.getUserById(userId, user -> listener.onComplete(user));
                 });
     }
 
-    public void signUp(String email, String password, Model.UserProcess listener) {
+    public void signUp(String fullName, String email, String password, Model.UserProcess listener) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
-                    User u = signInsignUpOnComplete(task);
-                    listener.onComplete(u);
+                    if (!task.isSuccessful()) {
+                        Log.d("TAG", "Firebase - sign-up failed");
+                        signInsignUpError(task);
+                        listener.onComplete(null);
+                        return;
+                    }
+                    Log.d("TAG", "Firebase - sign-up success");
+                    //Create User object
+                    FirebaseUser fbUser = mAuth.getCurrentUser();
+                    String userId = fbUser.getUid();
+                    String image = "";
+                    User user = new User(userId, email, fullName, image);
+                    addUser(user);                             //Add user to user's collection
+                    listener.onComplete(user);
                 });
     }
 
-    private User signInsignUpOnComplete(Task<AuthResult> task){
-        User u = null;
-        if (task.isSuccessful()) {
-            Log.d("TAG", "signInWithEmail:success ");
+    private void signInsignUpError(Task<AuthResult> task) {
+        Log.d("TAG", "Firebase - failed to sign-in " + task.getException());
 
-            FirebaseUser fbUser = mAuth.getCurrentUser();
-            assert fbUser != null: "FirebaseUser current user is null!";
-            u = new com.example.mixtape.model.User(fbUser.getUid(), fbUser.getEmail(), "Admin User", "");
-            //TODO: set display name and image
-        } else {
-            Log.d("TAG", "signInWithEmail:failure ", task.getException());
-
-            Exception e = task.getException();
-            if (e instanceof FirebaseAuthInvalidCredentialsException) {
-                Model.instance.dbError = "Invalid password";
-            } else if (e instanceof FirebaseAuthInvalidUserException) {
-                String errorCode = ((FirebaseAuthInvalidUserException) e).getErrorCode();
-                switch (errorCode) {
-                    case "ERROR_USER_NOT_FOUND":
-                        Model.instance.dbError = "No matching account found";
-                        break;
-                    case "ERROR_USER_DISABLED":
-                        Model.instance.dbError = "User account has been disabled";
-                        break;
-                    case "ERROR_EMAIL_ALREADY_IN_USE":
-                        Model.instance.dbError = "Email is already in use";
-                        break;
-                    default:
-                        Model.instance.dbError = e.getMessage();
-                        break;
-                }
+        //Get error
+        Exception e = task.getException();
+        if (e instanceof FirebaseAuthInvalidCredentialsException) {
+            Model.instance.dbError = "Invalid password";
+        } else if (e instanceof FirebaseAuthInvalidUserException) {
+            String errorCode = ((FirebaseAuthInvalidUserException) e).getErrorCode();
+            switch (errorCode) {
+                case "ERROR_USER_NOT_FOUND":
+                    Model.instance.dbError = "No matching account found";
+                    break;
+                case "ERROR_USER_DISABLED":
+                    Model.instance.dbError = "User account has been disabled";
+                    break;
+                case "ERROR_EMAIL_ALREADY_IN_USE":
+                    Model.instance.dbError = "Email is already in use";
+                    break;
+                default:
+                    Model.instance.dbError = e.getMessage();
+                    break;
             }
         }
-        return u;
     }
 
-    //_________________________ STORAGE ____________________________________________________________
-    //TODO
+    public void signOut() {
+        mAuth.signOut();
+        Log.d("TAG", "Firebase - sign-out performed");
+    }
 
-    //_________________________ DATABASE ___________________________________________________________
+    /*____________________________________________________________________________________________*/
+    /*__________________________________________ STORAGE _________________________________________*/
+    /*____________________________________________________________________________________________*/
+
+    public void saveImage(Bitmap imageBitmap, String folder, String imageName, Model.SaveImageListener listener) {
+        StorageReference storageRef = storage.getReference();
+        StorageReference imgRef = storageRef.child(folder + "/" + imageName);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        byte[] data = baos.toByteArray();
+        UploadTask uploadTask = imgRef.putBytes(data);
+        uploadTask
+                .addOnSuccessListener(taskSnapshot -> imgRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    listener.onComplete(uri.toString());
+                }))
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to upload image " + e.getMessage()));
+        //.addOnFailureListener(exception -> listener.onComplete(null))
+    }
+
+    /*____________________________________________________________________________________________*/
+    /*___________________________________________ DATA ___________________________________________*/
+    /*____________________________________________________________________________________________*/
 
     //TODO: get feed for specific user (Timestamp lastUpdate, User userId, Model.GetFeed listener)
-    public void getFeed(Long lastUpdate, Model.GetSongs listener) {
+
+    public void getFeedSongs(Long lastUpdate, Model.GetSongs listener) {
         db.collection(Song.COLLECTION_NAME)
                 .whereGreaterThanOrEqualTo("timeCreated", new Timestamp(lastUpdate, 0))
                 .get()
                 .addOnCompleteListener(task -> {
-                    List<Song> list = new LinkedList<>();
+                    List<Song> songs = new LinkedList<>();
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot doc : task.getResult()) {
                             Song song = Song.create(doc.getData());
                             song.setSongId(doc.getId());
-                            if (song != null) {
-                                list.add(song);
-                            }
+                            songs.add(song);
                         }
                     }
-                    listener.onComplete(list);
+                    listener.onComplete(songs);
                 });
     }
 
-    public void getProfile(Long lastUpdate, String userId, Model.GetMixtapes listener) {
+    public void getProfileMixtapes(Long lastUpdate, String userId, Model.GetMixtapes listener) {
         db.collection(Mixtape.COLLECTION_NAME)
                 .whereEqualTo("userId", userId)  //TODO:Check equal
                 .whereGreaterThanOrEqualTo("timeCreated", new Timestamp(lastUpdate, 0))
                 .get()
                 .addOnCompleteListener(task -> {
-                    List<Mixtape> list = new LinkedList<>();
+                    List<Mixtape> mixtapes = new LinkedList<>();
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot doc : task.getResult()) {
                             Mixtape mixtape = Mixtape.create(doc.getData());
-                            if (mixtape != null) {
-                                list.add(mixtape);
-                            }
+                            mixtapes.add(mixtape);
                         }
                     }
-                    listener.onComplete(list);
+                    listener.onComplete(mixtapes);
                 });
     }
 
-    public void getSongById(String songId, Model.GetSong listener) {
 
+    public void getMixtapesByIds(List<String> mixtapeIds, Model.GetMixtapes listener) {
+        db.collection(Mixtape.COLLECTION_NAME).whereIn("mixtapeId", mixtapeIds).get()
+                .addOnCompleteListener(mixtapesTask -> {
+                    if (mixtapesTask.isSuccessful()) {
+                        //Log.d("TAG", "Firebase - found " + mixtapesTask.getResult().size() + " mixtapes to feed");
+                        List<Mixtape> mixtapes = new LinkedList<>();
+                        for (QueryDocumentSnapshot documentSnapshot : mixtapesTask.getResult()) {
+                            Mixtape mixtape = Mixtape.create(documentSnapshot.getData());
+                            mixtapes.add(mixtape);
+                        }
+                        listener.onComplete(mixtapes);
+                    } else
+                        Log.d("TAG", "Firebase - failed to get feed mixtapes ");
+                });
     }
 
-    public void addSongPost(Song song, Model.AddSong listener) {
+    public void getUsersByIds(List<String> userIds, Model.GetUsers listener) {
+        db.collection(User.COLLECTION_NAME).whereIn("userId", userIds).get()
+                .addOnCompleteListener(usersTask -> {
+                    if (usersTask.isSuccessful()) {
+                        //Log.d("TAG", "Firebase - found " + usersTask.getResult().size() + " users to feed");
+                        List<User> users = new LinkedList<>();
+                        for (QueryDocumentSnapshot documentSnapshot : usersTask.getResult()) {
+                            User user = User.create(documentSnapshot.getData());
+                            users.add(user);
+                        }
+                        listener.onComplete(users);
+                    } else
+                        Log.d("TAG", "Firebase - failed to get feed users ");
+                });
+    }
 
+
+    public void getSongById(String songId, Model.GetSong listener) {
+        db.collection(Song.COLLECTION_NAME)
+                .document(songId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Song song = Song.create(documentSnapshot.getData());
+                    listener.onComplete(song);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get song " + e.getMessage()));
     }
 
     public void getMixtapeById(String mixtapeId, Model.GetMixtape listener) {
+        db.collection(Mixtape.COLLECTION_NAME)
+                .document(mixtapeId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    Mixtape mixtape = Mixtape.create(documentSnapshot.getData());
+                    listener.onComplete(mixtape);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get mixtape " + e.getMessage()));
     }
 
-    public void addMixtape(Song song, Model.AddMixtape listener) {
+    public void getUserById(String userId, Model.GetUser listener) {
+        db.collection(User.COLLECTION_NAME)
+                .document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    User user = User.create(documentSnapshot.getData());
+                    listener.onComplete(user);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user " + e.getMessage()));
+    }
 
+    public void addSong(Song song, Model.AddSong listener) {
+        DocumentReference addedDocRef = db.collection(Song.COLLECTION_NAME).document();
+        song.setSongId(addedDocRef.getId());
+
+        Map<String, Object> json = song.toJson();
+        addedDocRef
+                .set(json)
+                .addOnSuccessListener(unused -> listener.onComplete(song.getSongId()))
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add song " + e.getMessage()));
+    }
+
+    public void addMixtape(Mixtape mixtape, Model.AddMixtape listener) {
+        DocumentReference addedDocRef = db.collection(Mixtape.COLLECTION_NAME).document();
+        mixtape.setMixtapeId(addedDocRef.getId());
+
+        Map<String, Object> json = mixtape.toJson();
+        addedDocRef
+                .set(json)
+                .addOnSuccessListener(unused -> listener.onComplete(mixtape.getMixtapeId()))
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add mixtape " + e.getMessage()));
+    }
+
+    private void addUser(User user) {
+        DocumentReference addedDocRef = db.collection(User.COLLECTION_NAME).document(user.getUserId());
+        Map<String, Object> json = user.toJson();
+        addedDocRef
+                .set(json)
+                .addOnSuccessListener(unused -> Log.d("TAG", "Firebase - add user " + user.getUserId()))
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add user " + e.getMessage()));
+    }
+
+
+    public void getMixtapesOfUser(String userId, Model.GetMixtapesOfUser listener) {
+        db.collection(Mixtape.COLLECTION_NAME).whereEqualTo("userId", userId).get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    Map<String, String> mixtapeIdToName = new HashMap<>();
+                    for (DocumentSnapshot document : queryDocumentSnapshots.getDocuments()) {
+                        mixtapeIdToName.put(document.getId(), document.getString("name"));
+                    }
+                    listener.onComplete(mixtapeIdToName);
+                });
     }
 
     public void getSongsOfMixtape(Long lastUpdate, String mixtapeId, Model.GetSongs listener) {
 
     }
-
 
 }

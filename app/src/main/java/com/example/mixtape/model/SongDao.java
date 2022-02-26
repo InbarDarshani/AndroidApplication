@@ -11,14 +11,27 @@ import java.util.List;
 @Dao
 public interface SongDao {
 
-    @Query("select * from Song")
+    @Query("SELECT * FROM Song")
     List<Song> getAll();
 
+    @Query("SELECT songId FROM Song")
+    List<String> getAllIds();
+
+    @Query("SELECT DISTINCT mixtapeId FROM Song")
+    List<String> getMixtapesIds();
+
+    @Query("SELECT DISTINCT userId FROM Song")
+    List<String> getUsersIds();
+
+    @Query("SELECT * FROM Song WHERE songId = :songId")
+    Song getOneById(String songId);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertMany(Song... songs);
+    void insertMultiple(Song... songs);
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertMany(List<Song> songs);
 
     @Delete
     void delete(Song song);
-
-
 }
