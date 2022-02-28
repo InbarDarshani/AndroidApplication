@@ -3,6 +3,9 @@ package com.example.mixtape.model;
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.AuthResult;
@@ -15,6 +18,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -60,7 +64,7 @@ public class ModelFirebase {
                     Log.d("TAG", "Firebase - sign-in success");
                     //Get User object
                     String userId = mAuth.getCurrentUser().getUid();
-                    this.getUserById(userId, user -> listener.onComplete(user));
+                    this.getUserById(userId, listener::onComplete);
                 });
     }
 
@@ -140,6 +144,7 @@ public class ModelFirebase {
 
     //TODO: get feed for specific user (Timestamp lastUpdate, User userId, Model.GetFeed listener)
 
+    //_________ New Documents Fetching _________
     public void getFeedSongs(Long lastUpdate, Model.GetSongs listener) {
         db.collection(Song.COLLECTION_NAME)
                 .whereGreaterThanOrEqualTo("timeCreated", new Timestamp(lastUpdate, 0))
@@ -147,14 +152,15 @@ public class ModelFirebase {
                 .addOnCompleteListener(task -> {
                     List<Song> songs = new LinkedList<>();
                     if (task.isSuccessful()) {
-                        for (QueryDocumentSnapshot doc : task.getResult()) {
-                            Song song = Song.create(doc.getData());
-                            song.setSongId(doc.getId());
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            Song song = Song.create(documentSnapshot.getData());
+                            song.setSongId(documentSnapshot.getId());
                             songs.add(song);
                         }
                     }
                     listener.onComplete(songs);
-                });
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get feed songs " + e.getMessage()));
     }
 
     public void getProfileMixtapes(Long lastUpdate, String userId, Model.GetMixtapes listener) {
@@ -165,58 +171,77 @@ public class ModelFirebase {
                 .addOnCompleteListener(task -> {
                     List<Mixtape> mixtapes = new LinkedList<>();
                     if (task.isSuccessful()) {
-                        for (QueryDocumentSnapshot doc : task.getResult()) {
-                            Mixtape mixtape = Mixtape.create(doc.getData());
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            Mixtape mixtape = Mixtape.create(documentSnapshot.getData());
+                            mixtape.setMixtapeId(documentSnapshot.getId());
                             mixtapes.add(mixtape);
                         }
                     }
                     listener.onComplete(mixtapes);
-                });
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get profile mixtapes " + "\n\t" + e.getMessage()));
     }
 
+    //_________ Multiple Documents Fetching _________
+    public void getSongsByIds(List<String> songIds, Model.GetSongs listener) {
+        db.collection(Song.COLLECTION_NAME).whereIn("songId", songIds).get()
+                .addOnCompleteListener(songTask -> {
+                    List<Song> songs = new LinkedList<>();
+                    if (songTask.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : songTask.getResult()) {
+                            Song song = Song.create(documentSnapshot.getData());
+                            song.setSongId(documentSnapshot.getId());
+                            songs.add(song);
+                        }
+                    }
+                    listener.onComplete(songs);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get songs " + "\n\t" + e.getMessage()));
+    }
 
     public void getMixtapesByIds(List<String> mixtapeIds, Model.GetMixtapes listener) {
         db.collection(Mixtape.COLLECTION_NAME).whereIn("mixtapeId", mixtapeIds).get()
                 .addOnCompleteListener(mixtapesTask -> {
+                    List<Mixtape> mixtapes = new LinkedList<>();
                     if (mixtapesTask.isSuccessful()) {
-                        //Log.d("TAG", "Firebase - found " + mixtapesTask.getResult().size() + " mixtapes to feed");
-                        List<Mixtape> mixtapes = new LinkedList<>();
                         for (QueryDocumentSnapshot documentSnapshot : mixtapesTask.getResult()) {
                             Mixtape mixtape = Mixtape.create(documentSnapshot.getData());
+                            mixtape.setMixtapeId(documentSnapshot.getId());
                             mixtapes.add(mixtape);
                         }
-                        listener.onComplete(mixtapes);
-                    } else
-                        Log.d("TAG", "Firebase - failed to get feed mixtapes ");
-                });
+                    }
+                    listener.onComplete(mixtapes);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get mixtapes " + "\n\t" + e.getMessage()));
     }
 
     public void getUsersByIds(List<String> userIds, Model.GetUsers listener) {
         db.collection(User.COLLECTION_NAME).whereIn("userId", userIds).get()
                 .addOnCompleteListener(usersTask -> {
+                    List<User> users = new LinkedList<>();
                     if (usersTask.isSuccessful()) {
-                        //Log.d("TAG", "Firebase - found " + usersTask.getResult().size() + " users to feed");
-                        List<User> users = new LinkedList<>();
                         for (QueryDocumentSnapshot documentSnapshot : usersTask.getResult()) {
                             User user = User.create(documentSnapshot.getData());
+                            user.setUserId(documentSnapshot.getId());
                             users.add(user);
                         }
-                        listener.onComplete(users);
-                    } else
-                        Log.d("TAG", "Firebase - failed to get feed users ");
-                });
+                    }
+                    listener.onComplete(users);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get users " + "\n\t" + e.getMessage()));
     }
 
-
+    //_________ Single Document Fetching _________
     public void getSongById(String songId, Model.GetSong listener) {
         db.collection(Song.COLLECTION_NAME)
                 .document(songId)
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     Song song = Song.create(documentSnapshot.getData());
+                    song.setSongId(documentSnapshot.getId());
                     listener.onComplete(song);
                 })
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get song " + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get song " + songId + "\n\t" + e.getMessage()));
     }
 
     public void getMixtapeById(String mixtapeId, Model.GetMixtape listener) {
@@ -225,9 +250,10 @@ public class ModelFirebase {
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     Mixtape mixtape = Mixtape.create(documentSnapshot.getData());
+                    mixtape.setMixtapeId(documentSnapshot.getId());
                     listener.onComplete(mixtape);
                 })
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get mixtape " + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get mixtape " + mixtapeId + "\n\t" + e.getMessage()));
     }
 
     public void getUserById(String userId, Model.GetUser listener) {
@@ -236,12 +262,14 @@ public class ModelFirebase {
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     User user = User.create(documentSnapshot.getData());
+                    user.setUserId(documentSnapshot.getId());
                     listener.onComplete(user);
                 })
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user " + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user " + userId + "\n\t" + e.getMessage()));
     }
 
-    public void addSong(Song song, Model.AddSong listener) {
+    //_________ Document Creation _________
+    public void addSong(@NonNull Song song, Model.AddSong listener) {
         DocumentReference addedDocRef = db.collection(Song.COLLECTION_NAME).document();
         song.setSongId(addedDocRef.getId());
 
@@ -252,7 +280,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add song " + e.getMessage()));
     }
 
-    public void addMixtape(Mixtape mixtape, Model.AddMixtape listener) {
+    public void addMixtape(@NonNull Mixtape mixtape, Model.AddMixtape listener) {
         DocumentReference addedDocRef = db.collection(Mixtape.COLLECTION_NAME).document();
         mixtape.setMixtapeId(addedDocRef.getId());
 
@@ -260,32 +288,45 @@ public class ModelFirebase {
         addedDocRef
                 .set(json)
                 .addOnSuccessListener(unused -> listener.onComplete(mixtape.getMixtapeId()))
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add mixtape " + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add mixtape " + mixtape.getMixtapeId() + "\n\t" + e.getMessage()));
     }
 
-    private void addUser(User user) {
+    private void addUser(@NonNull User user) {
         DocumentReference addedDocRef = db.collection(User.COLLECTION_NAME).document(user.getUserId());
         Map<String, Object> json = user.toJson();
         addedDocRef
                 .set(json)
                 .addOnSuccessListener(unused -> Log.d("TAG", "Firebase - add user " + user.getUserId()))
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add user " + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add user " + user.getUserId() + "\n\t" + e.getMessage()));
     }
 
-
-    public void getMixtapesOfUser(String userId, Model.GetMixtapesOfUser listener) {
+    public void getMixtapesOfUser(String userId, Model.GetMixtapes listener) {
         db.collection(Mixtape.COLLECTION_NAME).whereEqualTo("userId", userId).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    Map<String, String> mixtapeIdToName = new HashMap<>();
+                    List<Mixtape> mixtapes = new LinkedList<>();
                     for (DocumentSnapshot document : queryDocumentSnapshots.getDocuments()) {
-                        mixtapeIdToName.put(document.getId(), document.getString("name"));
+                        Mixtape mixtape = Mixtape.create(document.getData());
+                        mixtape.setMixtapeId(document.getId());
+                        mixtapes.add(mixtape);
                     }
-                    listener.onComplete(mixtapeIdToName);
-                });
+                    listener.onComplete(mixtapes);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get get mixtapes of user " + userId + "\n\t" + e.getMessage()));
     }
 
-    public void getSongsOfMixtape(Long lastUpdate, String mixtapeId, Model.GetSongs listener) {
-
+    public void getSongsOfMixtape(String mixtapeId, Model.GetSongs listener) {
+        db.collection(Song.COLLECTION_NAME).whereEqualTo("mixtapeId", mixtapeId).get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Song> songs = new LinkedList<>();
+                    for (DocumentSnapshot document : queryDocumentSnapshots.getDocuments()) {
+                        Song song = Song.create(document.getData());
+                        song.setSongId(document.getId());
+                        songs.add(song);
+                    }
+                    listener.onComplete(songs);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get get songs of mixtape " + mixtapeId + "\n\t" + e.getMessage()));
     }
+
 
 }

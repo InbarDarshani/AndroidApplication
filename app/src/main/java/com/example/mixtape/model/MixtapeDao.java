@@ -21,6 +21,9 @@ public interface MixtapeDao {
     @Query("SELECT * FROM Mixtape WHERE mixtapeId IN(:mixtapeIds)")
     List<Mixtape> getManyByIds(List<String> mixtapeIds);
 
+    @Query("SELECT * FROM Mixtape WHERE  userId = :userId")
+    List<Mixtape> getManyByUserId(String userId);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertMultiple(Mixtape... mixtapes);
 

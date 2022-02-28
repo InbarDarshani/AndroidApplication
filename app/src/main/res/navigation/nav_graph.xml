@@ -17,8 +17,8 @@
     <fragment
         android:id="@+id/songDetailsFragment"
         android:name="com.example.mixtape.app.SongDetailsFragment"
-        android:label="Post"
-        tools:layout="@layout/fragment_song_details" >
+        android:label="Song Post"
+        tools:layout="@layout/fragment_song_details">
         <argument
             android:name="songId"
             app:argType="string" />
@@ -27,7 +27,11 @@
         android:id="@+id/profileFragment"
         android:name="com.example.mixtape.app.ProfileFragment"
         android:label="Profile"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile" >
+        <action
+            android:id="@+id/action_profileFragment_to_mixtapeDetailsFragment"
+            app:destination="@id/mixtapeDetailsFragment" />
+    </fragment>
     <action
         android:id="@+id/action_global_profileFragment"
         app:destination="@id/profileFragment" />
@@ -43,4 +47,16 @@
         tools:layout="@layout/fragment_add_mixtape" />
     <action android:id="@+id/action_global_addMixtapeFragment" app:destination="@id/addMixtapeFragment" />
     <action android:id="@+id/action_global_addSongFragment" app:destination="@id/addSongFragment" /><action android:id="@+id/action_global_feedFragment" app:destination="@id/feedFragment"/>
+    <fragment
+        android:id="@+id/mixtapeDetailsFragment"
+        android:name="com.example.mixtape.app.MixtapeDetailsFragment"
+        android:label="Mixtape"
+        tools:layout="@layout/fragment_mixtape_details">
+        <argument
+            android:name="mixtapeId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_mixtapeDetailsFragment_to_songDetailsFragment"
+            app:destination="@id/songDetailsFragment" />
+    </fragment>
 </navigation>

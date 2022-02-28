@@ -29,6 +29,7 @@ import android.widget.ProgressBar;
 
 import com.example.mixtape.MyApplication;
 import com.example.mixtape.R;
+import com.example.mixtape.model.Mixtape;
 import com.example.mixtape.model.Model;
 import com.example.mixtape.model.Song;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -36,7 +37,7 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.Objects;
-
+import java.util.stream.Collectors;
 
 public class AddSongFragment extends Fragment {
     MaterialAlertDialogBuilder alert;
@@ -80,14 +81,17 @@ public class AddSongFragment extends Fragment {
         alert.setTitle("Error");
 
         //Setup dropdown list with user's mixtapes
-        currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("UserId", "");
-        Model.instance.getMixtapesOfUser(currentUserId, mixtapesIdToName -> {
-            if (mixtapesIdToName.isEmpty()) {
+        currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
+        Model.instance.getMixtapesOfUser(currentUserId, mixtapes -> {
+            //TODO: ViewModel!
+
+            //TODO: default mixtape and createMixtape dialog
+            if (mixtapes.isEmpty()) {
                 song_mixtape_til.setHint("No Mixtapes created yet");
                 song_mixtape_et.setEnabled(false);
             }
-            if (!currentUserId.isEmpty() && !mixtapesIdToName.isEmpty()) {
-                String[] options = mixtapesIdToName.values().toArray(new String[0]);
+            if (!currentUserId.isEmpty() && !mixtapes.isEmpty()) {
+                String[] options = mixtapes.stream().map(Mixtape::getName).toArray(String[]::new);
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line, options);
                 song_mixtape_et.setAdapter(adapter);
             }

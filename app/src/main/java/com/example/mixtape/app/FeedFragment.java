@@ -30,6 +30,7 @@ public class FeedFragment extends Fragment {
     RecyclerView list;
     ListAdapter adapter;
     SwipeRefreshLayout swipeRefresh;
+    TextView feed_empty_tv;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -41,6 +42,9 @@ public class FeedFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_feed, container, false);
+
+        //Get views
+        feed_empty_tv = view.findViewById(R.id.feed_empty_tv);
 
         //Setup refresh view, attach OnRefresh function, set refreshing state according to Model's loading state
         swipeRefresh = view.findViewById(R.id.feed_swiperefresh);
@@ -57,18 +61,27 @@ public class FeedFragment extends Fragment {
         //Create the row items listeners actions
         adapter.setOnItemClickListener((v, position) -> {
             //get song item from view model
-            String sId = viewModel.getSongItems().getValue().get(position).song.getSongId();
-            //navigate to sod details page
-            Navigation.findNavController(v).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment(sId));
+            String songId = viewModel.getSongItems().getValue().get(position).song.getSongId();
+            //navigate to song details page
+            Navigation.findNavController(v).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment(songId));
         });
 
         //Setup observer for ViewModel's livedata, set OnChange action
-        viewModel.getSongItems().observe(getViewLifecycleOwner(), feedItems -> FeedFragment.this.refresh());
+        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> FeedFragment.this.refresh());
 
         //Setup observer for Model's feed loading state
         Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), feedLoadingState -> {
             //Change SwipeRefreshLayout according to loading state
-            swipeRefresh.setRefreshing(feedLoadingState == Model.FeedState.loading);
+            swipeRefresh.setRefreshing(feedLoadingState != Model.FeedState.loaded);
+
+            //Treat an empty list state
+            if (feedLoadingState == Model.FeedState.empty) {
+                list.setVisibility(View.GONE);
+                feed_empty_tv.setVisibility(View.VISIBLE);
+            } else {
+                list.setVisibility(View.VISIBLE);
+                feed_empty_tv.setVisibility(View.GONE);
+            }
         });
 
         return view;
@@ -134,7 +147,7 @@ public class FeedFragment extends Fragment {
     }
 
     //______________________ Recycler View Adapter Class _____________________________
-    //Student list adapter holding also the row listeners
+    //List adapter holding also the row listeners
     class ListAdapter extends RecyclerView.Adapter<RowHolder> {
 
         OnItemClickListener listener;

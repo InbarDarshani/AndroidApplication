@@ -14,6 +14,12 @@ public interface SongDao {
     @Query("SELECT * FROM Song")
     List<Song> getAll();
 
+    @Query("SELECT * FROM Song WHERE userId = :userId")
+    List<Song> getAllByUserId(String userId);
+
+    @Query("SELECT * FROM Song WHERE mixtapeId = :mixtapeId")
+    List<Song> getAllByMixtapeId(String mixtapeId);
+
     @Query("SELECT songId FROM Song")
     List<String> getAllIds();
 

@@ -4,7 +4,7 @@ import com.example.mixtape.model.Mixtape;
 import com.example.mixtape.model.Song;
 import com.example.mixtape.model.User;
 
-//Object containing all required objects to feed song post
+//Object containing all required objects of a song post
 public class SongItem {
     public Song song;
     public Mixtape mixtape;

@@ -9,7 +9,7 @@ import com.example.mixtape.model.Model;
 import java.util.List;
 
 public class FeedViewModel extends ViewModel {
-    LiveData<List<SongItem>> songItems;
+    private LiveData<List<SongItem>> songItems;
 
     public FeedViewModel() {
         songItems = Model.instance.getFeed();

@@ -1,21 +1,21 @@
 package com.example.mixtape.model;
 
-import com.example.mixtape.model.Mixtape;
-import com.example.mixtape.model.Song;
-import com.example.mixtape.model.User;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-//Object containing all required objects to profile mixtape
+//Object containing all required objects of a mixtape
 public class MixtapeItem {
     public Mixtape mixtape;
-    public Song song;
+    public List<Song> songs;
     public User user;
 
     public MixtapeItem() {
     }
 
-    public MixtapeItem(Mixtape mixtape, Song song, User user) {
+    public MixtapeItem(Mixtape mixtape, List<Song> songs, User user) {
         this.mixtape = mixtape;
-        this.song = song;
+        this.songs = songs;
         this.user = user;
     }
 
@@ -27,12 +27,12 @@ public class MixtapeItem {
         this.mixtape = mixtape;
     }
 
-    public Song getSong() {
-        return song;
+    public List<Song> getSongs() {
+        return songs;
     }
 
-    public void setSong(Song song) {
-        this.song = song;
+    public void setSongs(List<Song> songs) {
+        this.songs = songs;
     }
 
     public User getUser() {
@@ -41,5 +41,9 @@ public class MixtapeItem {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public String[] getSongsNames(){
+        return songs.stream().map(Song::getName).toArray(String[]::new);
     }
 }
