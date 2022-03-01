@@ -142,8 +142,6 @@ public class ModelFirebase {
     /*___________________________________________ DATA ___________________________________________*/
     /*____________________________________________________________________________________________*/
 
-    //TODO: get feed for specific user (Timestamp lastUpdate, User userId, Model.GetFeed listener)
-
     //_________ New Documents Fetching _________
     public void getFeedSongs(Long lastUpdate, Model.GetSongs listener) {
         db.collection(Song.COLLECTION_NAME)
@@ -182,13 +180,31 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get profile mixtapes " + "\n\t" + e.getMessage()));
     }
 
+    public void getAllSongs(Model.GetSongs listener) {
+        db.collection(Song.COLLECTION_NAME)
+                .get()
+                .addOnCompleteListener(task -> {
+                    List<Song> songs = new LinkedList<>();
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            Song song = Song.create(documentSnapshot.getData());
+                            song.setSongId(documentSnapshot.getId());
+                            songs.add(song);
+                        }
+                    }
+                    listener.onComplete(songs);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get all songs " + e.getMessage()));
+    }
+
+
     //_________ Multiple Documents Fetching _________
     public void getSongsByIds(List<String> songIds, Model.GetSongs listener) {
         db.collection(Song.COLLECTION_NAME).whereIn("songId", songIds).get()
-                .addOnCompleteListener(songTask -> {
+                .addOnCompleteListener(task -> {
                     List<Song> songs = new LinkedList<>();
-                    if (songTask.isSuccessful()) {
-                        for (QueryDocumentSnapshot documentSnapshot : songTask.getResult()) {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
                             Song song = Song.create(documentSnapshot.getData());
                             song.setSongId(documentSnapshot.getId());
                             songs.add(song);
@@ -201,10 +217,10 @@ public class ModelFirebase {
 
     public void getMixtapesByIds(List<String> mixtapeIds, Model.GetMixtapes listener) {
         db.collection(Mixtape.COLLECTION_NAME).whereIn("mixtapeId", mixtapeIds).get()
-                .addOnCompleteListener(mixtapesTask -> {
+                .addOnCompleteListener(task -> {
                     List<Mixtape> mixtapes = new LinkedList<>();
-                    if (mixtapesTask.isSuccessful()) {
-                        for (QueryDocumentSnapshot documentSnapshot : mixtapesTask.getResult()) {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
                             Mixtape mixtape = Mixtape.create(documentSnapshot.getData());
                             mixtape.setMixtapeId(documentSnapshot.getId());
                             mixtapes.add(mixtape);
@@ -217,10 +233,10 @@ public class ModelFirebase {
 
     public void getUsersByIds(List<String> userIds, Model.GetUsers listener) {
         db.collection(User.COLLECTION_NAME).whereIn("userId", userIds).get()
-                .addOnCompleteListener(usersTask -> {
+                .addOnCompleteListener(task -> {
                     List<User> users = new LinkedList<>();
-                    if (usersTask.isSuccessful()) {
-                        for (QueryDocumentSnapshot documentSnapshot : usersTask.getResult()) {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
                             User user = User.create(documentSnapshot.getData());
                             user.setUserId(documentSnapshot.getId());
                             users.add(user);
@@ -328,5 +344,15 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get get songs of mixtape " + mixtapeId + "\n\t" + e.getMessage()));
     }
 
+    //_________ Document Updating _________
+    public void updateSong(Song song, Model.UpdateSong listener){
+        db.collection(Song.COLLECTION_NAME)
+                .document(song.getSongId())
+                .set(song.toJson())
+                .addOnSuccessListener(documentSnapshot -> {
+                    listener.onComplete();
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update song " + song.getSongId() + "\n\t" + e.getMessage()));
+    }
 
 }

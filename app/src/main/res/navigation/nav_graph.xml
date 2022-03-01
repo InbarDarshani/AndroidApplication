@@ -31,6 +31,9 @@
         <action
             android:id="@+id/action_profileFragment_to_mixtapeDetailsFragment"
             app:destination="@id/mixtapeDetailsFragment" />
+        <argument
+            android:name="userId"
+            app:argType="string" />
     </fragment>
     <action
         android:id="@+id/action_global_profileFragment"
@@ -59,4 +62,5 @@
             android:id="@+id/action_mixtapeDetailsFragment_to_songDetailsFragment"
             app:destination="@id/songDetailsFragment" />
     </fragment>
+    <action android:id="@+id/action_global_songDetailsFragment" app:destination="@id/songDetailsFragment" /><action android:id="@+id/action_global_mixtapeDetailsFragment" app:destination="@id/mixtapeDetailsFragment"/>
 </navigation>

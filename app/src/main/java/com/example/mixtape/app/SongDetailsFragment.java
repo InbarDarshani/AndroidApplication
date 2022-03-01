@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 
 import com.example.mixtape.R;
 import com.example.mixtape.model.Model;
@@ -61,6 +62,10 @@ public class SongDetailsFragment extends Fragment {
         song_name_tv.setText(viewModel.getSong().getName());
         song_artist_tv.setText(viewModel.getSong().getArtist());
         song_caption_tv.setText(viewModel.getSong().getCaption());
+
+        //Set on click navigations
+        song_details_user_iv.setOnClickListener(v -> Navigation.findNavController(v).navigate(FeedFragmentDirections.actionGlobalProfileFragment(viewModel.getUser().getUserId())));
+        song_mixtape_tv.setOnClickListener(v -> Navigation.findNavController(v).navigate(FeedFragmentDirections.actionGlobalMixtapeDetailsFragment(viewModel.getMixtape().getMixtapeId())));
 
         return view;
     }

@@ -12,13 +12,12 @@
         android:padding="10dp">
 
         <TextView
-            android:id="@+id/textView1"
+            android:id="@+id/textView"
             style="@style/TextAppearance.Material3.HeadlineSmall"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="a Mixtape playlist by"
-            android:textAlignment="center"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -32,13 +31,15 @@
             android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textView1">
+            app:layout_constraintTop_toBottomOf="@+id/textView">
 
             <ImageView
                 android:id="@+id/mixtape_details_user_iv"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_gravity="center|top"
+                android:clickable="true"
+                android:focusable="true"
                 app:srcCompat="@drawable/empty_profile_picture_colored" />
 
             <TextView
@@ -46,8 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="User"
-                android:textAlignment="center" />
+                android:text="User" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <!--Mixtape data-->
@@ -60,36 +60,21 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.chip.Chip
+                android:id="@+id/mixtape_name_tv"
+                style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:startIconDrawable="@drawable/icon_cassete">
+                android:text="Title"
+                app:chipIcon="@drawable/icon_cassete" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/mixtape_name_tv"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:focusable="false"
-                    android:focusableInTouchMode="false"
-                    android:inputType="none"
-                    android:text="Title" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.chip.Chip
+                android:id="@+id/mixtape_description_tv"
+                style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:startIconDrawable="@drawable/icon_caption">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/mixtape_description_tv"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:focusableInTouchMode="false"
-                    android:inputType="none"
-                    android:text="Description" />
-            </com.google.android.material.textfield.TextInputLayout>
+                android:text="Description"
+                app:chipIcon="@drawable/icon_caption" />
 
             <!--Mixtape data - Songs list-->
             <com.google.android.material.card.MaterialCardView
@@ -104,19 +89,19 @@
                     android:padding="5dp">
 
                     <TextView
-                        style="@style/TextAppearance.Material3.TitleMedium"
+                        style="@style/TextAppearance.Mixtape.TextViewStyle"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:text="Songs"
-                        android:textAlignment="center" />
+                        android:textColor="?attr/colorOnSurface" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/mixtape_songs_rv"
-                        android:layout_marginTop="5dp"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp" />
                 </androidx.appcompat.widget.LinearLayoutCompat>
+
             </com.google.android.material.card.MaterialCardView>
 
         </androidx.appcompat.widget.LinearLayoutCompat>

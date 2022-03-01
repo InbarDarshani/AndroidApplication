@@ -2,10 +2,15 @@ package com.example.mixtape;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.res.Configuration;
+
+import androidx.annotation.NonNull;
+
+import java.util.Locale;
 
 public class MyApplication extends Application {
 
-    static Context context;
+    private static Context context;
 
     @Override
     public void onCreate() {

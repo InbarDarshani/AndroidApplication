@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 //Holds the data
 
@@ -33,6 +34,7 @@ public class Model {
         profileLoadingState.setValue(ProfileState.loaded);
         userLoginState.setValue(LoginState.none);
     }
+
 
     /*____________________________________________________________________________________________*/
     /*______________________________________ AUTHENTICATION ______________________________________*/
@@ -111,9 +113,15 @@ public class Model {
 
     //Clear user data from local shared preferences
     private void clearUser() {
-        executor.execute(() -> MyApplication.getContext()
-                .deleteSharedPreferences("USER"));
+        executor.execute(() -> MyApplication.getContext().deleteSharedPreferences("USER"));
     }
+
+    //Synchronous function creating and returning current user as object
+    public User getCurrentUser() {
+        Map<String, Object> json = (Map<String, Object>) MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getAll();
+        return User.create(json);
+    }
+
 
     /*____________________________________________________________________________________________*/
     /*__________________________________________ STORAGE _________________________________________*/
@@ -123,6 +131,7 @@ public class Model {
     public void saveImage(Bitmap imageBitmap, String folder, String imageName, SaveImageListener listener) {
         modelFirebase.saveImage(imageBitmap, folder, imageName, listener);
     }
+
 
     /*____________________________________________________________________________________________*/
     /*___________________________________________ DATA ___________________________________________*/
@@ -159,27 +168,48 @@ public class Model {
     }
 
     //_________________________ Data Functions _________________________
-    //functions for data getters and setters
+
+    //_________ New Objects Fetching _________
     public LiveData<List<SongItem>> getFeed() {
         if (feed.getValue() == null) {
-            feedLoadingState.postValue(FeedState.empty);
             refreshFeed();
         }
         return feed;
     }
 
-    public LiveData<List<MixtapeItem>> getProfile() {
-        if (profile.getValue() == null) {
-            profileLoadingState.postValue(ProfileState.empty);
-            refreshProfile();
-        }
-        return profile;
+    public LiveData<List<MixtapeItem>> getUserProfile(String userId) {
+        profileLoadingState.postValue(ProfileState.loading);
+        MutableLiveData<List<MixtapeItem>> userMixtapeItems = new MutableLiveData<>();
+        modelFirebase.getProfileMixtapes(0L, userId, mixtapes -> {
+            executor.execute(() -> {
+                //Save mixtapes to local db
+                AppLocalDb.db.mixtapeDao().insertMany(mixtapes);
+                //Construct profile mixtape items objects from local db and post to live data
+                userMixtapeItems.postValue(constructProfileItems(userId));
+
+                if (mixtapes.isEmpty())
+                    profileLoadingState.postValue(ProfileState.empty);
+                else
+                    profileLoadingState.postValue(ProfileState.loaded);
+            });
+        });
+        return userMixtapeItems;
     }
 
+    //_________ Multiple Objects Fetching _________
 
+    public void getMixtapesOfUser(String userId, GetMixtapes listener) {
+        modelFirebase.getMixtapesOfUser(userId, listener);
+    }
+
+    public void getSongsOfMixtapes(String mixtapeId, GetSongs listener) {
+        modelFirebase.getSongsOfMixtape(mixtapeId, listener);
+    }
+
+    //_________ Single Object Fetching _________
     public void getSongItem(String songId, GetSongItem listener) {
+        //First try to fetch song objects from local db
         executor.execute(() -> {
-            //First try to fetch song objects from local db
             Song localSong = AppLocalDb.db.songDao().getOneById(songId);
             if (localSong != null) {
                 Mixtape localMixtape = AppLocalDb.db.mixtapeDao().getOneById(localSong.getMixtapeId());
@@ -188,54 +218,24 @@ public class Model {
                 if (localMixtape != null && localUser != null) {
                     SongItem songItem = new SongItem(localSong, localMixtape, localUser);
                     listener.onComplete(songItem);
-                    return;
                 }
             }
-
-            //CHECKME: FIXME: This Is Asynchronous action for viewModel (wont work)!
-            //Fetch song objects from firebase if not found in local db
-            SongItem songItem = new SongItem();
-            modelFirebase.getSongById(songId, dbSong -> {
-                songItem.setSong(dbSong);
-                modelFirebase.getMixtapeById(dbSong.getMixtapeId(), dbMixtape -> {
-                    songItem.setMixtape(dbMixtape);
-                    modelFirebase.getUserById(dbSong.getUserId(), dbUser -> {
-                        songItem.setUser(dbUser);
-                        listener.onComplete(songItem);
-                    });
-                });
-            });
         });
     }
 
-    public void getMixtapeItem(String mixtapeId, GetMixtapeItem listener){
+    public void getMixtapeItem(String mixtapeId, GetMixtapeItem listener) {
+        //First try to fetch mixtape objects from local db
         executor.execute(() -> {
-            //First try to fetch mixtape objects from local db
             Mixtape localMixtape = AppLocalDb.db.mixtapeDao().getOneById(mixtapeId);
             if (localMixtape != null) {
                 List<Song> localSongs = AppLocalDb.db.songDao().getAllByMixtapeId(localMixtape.getMixtapeId());
                 User localUser = AppLocalDb.db.userDao().getOneById(localMixtape.getUserId());
 
-                if (localMixtape != null && localUser != null) {
-                    MixtapeItem mixtapeItem = new MixtapeItem(localMixtape,localSongs, localUser);
+                if (localSongs != null && localUser != null) {
+                    MixtapeItem mixtapeItem = new MixtapeItem(localMixtape, localSongs, localUser);
                     listener.onComplete(mixtapeItem);
-                    return;
                 }
             }
-
-            //CHECKME: FIXME: This Is Asynchronous action for viewModel (wont work)!
-            //Fetch mixtape objects from firebase if not found in local db
-            MixtapeItem mixtapeItem = new MixtapeItem();
-            modelFirebase.getMixtapeById(mixtapeId, dbMixtape -> {
-                mixtapeItem.setMixtape(dbMixtape);
-                modelFirebase.getSongsOfMixtape(dbMixtape.getMixtapeId(), dbSongs -> {
-                    mixtapeItem.setSongs(dbSongs);
-                    modelFirebase.getUserById(dbMixtape.getUserId(), dbUser -> {
-                        mixtapeItem.setUser(dbUser);
-                        listener.onComplete(mixtapeItem);
-                    });
-                });
-            });
         });
     }
 
@@ -248,102 +248,113 @@ public class Model {
     }
 
     public void getUser(String userId, GetUser listener) {
-        modelFirebase.getUserById(userId, listener);
+        //Fetch user objects from local db
+        executor.execute(() -> {
+            User localUser = AppLocalDb.db.userDao().getOneById(userId);
+            if (localUser != null) {
+                listener.onComplete(localUser);
+            }
+        });
+        //REMOVEME: ?
+        //modelFirebase.getUserById(userId, listener);
     }
 
-
+    //_________ Object Creation _________
     public void addSong(Song song, AddSong listener) {
         modelFirebase.addSong(song, songId -> {
             //Save song to local db
-            AppLocalDb.db.songDao().insertMultiple(song);
+            executor.execute(() -> AppLocalDb.db.songDao().insertMultiple(song));
             //Return to listener
             listener.onComplete(songId);
             //Refresh live data
             refreshFeed();
-            refreshProfile();
         });
     }
 
     public void addMixtape(Mixtape mixtape, AddMixtape listener) {
         modelFirebase.addMixtape(mixtape, mixtapeId -> {
+            //Save song to local db
+            executor.execute(() -> AppLocalDb.db.mixtapeDao().insertMultiple(mixtape));
+            //Return to listener
             listener.onComplete(mixtapeId);
+            //Refresh live data
             refreshFeed();
-            refreshProfile();
         });
     }
 
-
-    public void getMixtapesOfUser(String userId, GetMixtapes listener) {
-        modelFirebase.getMixtapesOfUser(userId, listener);
+    //_________ Object Updating _________
+    public void updateSong(Song song, UpdateSong listener) {
+        modelFirebase.updateSong(song, () -> {
+            //Save song to local db
+            executor.execute(() -> AppLocalDb.db.songDao().insertMultiple(song));
+            //Return to listener
+            listener.onComplete();
+            //Refresh live data
+            refreshFeed();
+        });
     }
 
-    public void getSongsOfMixtapes(String mixtapeId, GetSongs listener){
-        modelFirebase.getSongsOfMixtape(mixtapeId, listener);
-    }
-
-    public User getCurrentUser() {
-        Map<String, Object> json = (Map<String, Object>) MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getAll();
-        return User.create(json);
-    }
-
-    //_________________________ Data Refresh Functions _________________________
-
-    //functions for local data refresh on the device
+    //_________________________ Other Functions _________________________
     public void refreshFeed() {
+        //Start loading
         feedLoadingState.setValue(FeedState.loading);
+
+        //First Get and post existing data from local db
+        executor.execute(() -> feed.postValue(constructFeedItems()));
+
+        //TODO: Compare existing db with firebase
+        //TODO: refresh according to delete date also
+        //TODO: listener with existing songs and new songs  ??
+        //executor.execute(() -> AppLocalDb.db.songDao().getAll().forEach(s -> AppLocalDb.db.songDao().delete(s)));
 
         //Get last local update date from the device
         Long lastUpdateDate = MyApplication.getContext().getSharedPreferences("FEED", Context.MODE_PRIVATE).getLong("FeedLastUpdateDate", 0);
-
         //Firebase get all updates since lastLocalUpdateDate
-        modelFirebase.getFeedSongs(lastUpdateDate, songs -> {
-            Log.d("TAG", "Model - firebase returned " + songs.size() + " songs to feed");
+        modelFirebase.getFeedSongs(lastUpdateDate, newSongs -> {
+            Log.d("TAG", "Model - firebase returned " + newSongs.size() + " new songs to feed");
 
-            if (songs.isEmpty()) {
-                feedLoadingState.postValue(FeedState.loaded);
-                return;
-            }
+            if (!newSongs.isEmpty()) {
+                executor.execute(() -> {
+                    //Save new feed songs to local db
+                    AppLocalDb.db.songDao().insertMany(newSongs);
 
-            executor.execute(() -> {
-                //Save feed songs to local db
-                AppLocalDb.db.songDao().insertMany(songs);
+                    //Find and Save the latest update time to device's share preferences
+                    long lastLocalUpdate = newSongs.stream().mapToLong(Song::getTimeCreated).max().orElse(0);
+                    MyApplication.getContext().getSharedPreferences("FEED", Context.MODE_PRIVATE).edit().putLong("FeedLastUpdateDate", lastLocalUpdate).apply();
 
-                //CHECKME: check last update date is working
-                //Find and Save the latest update time to device's share preferences
-                long lastLocalUpdate = songs.stream().mapToLong(Song::getTimeCreated).max().getAsLong();
-                MyApplication.getContext().getSharedPreferences("FEED", Context.MODE_PRIVATE).edit().putLong("FeedLastUpdateDate", lastLocalUpdate).apply();
+                    //Get required mixtapes and user ids
+                    List<String> newMixtapeIds = newSongs.stream().map(Song::getMixtapeId).collect(Collectors.toList());
+                    List<String> newUsersIds = newSongs.stream().map(Song::getUserId).collect(Collectors.toList());
 
-                //Get required mixtapes and user ids
-                List<String> localMixtapesIds = AppLocalDb.db.songDao().getMixtapesIds();
-                List<String> localUsersIds = AppLocalDb.db.songDao().getUsersIds();
+                    //Get and save feed mixtapes and users
+                    modelFirebase.getMixtapesByIds(newMixtapeIds, mixtapes -> {
+                        Log.d("TAG", "Model - firebase returned " + mixtapes.size() + " mixtapes to feed");
 
-                //Get and save feed mixtapes and users
-                modelFirebase.getMixtapesByIds(localMixtapesIds, mixtapes -> {
-                    Log.d("TAG", "Model - firebase returned " + mixtapes.size() + " mixtapes to feed");
+                        executor.execute(() -> {
+                            //Save feed mixtapes to local db
+                            AppLocalDb.db.mixtapeDao().insertMany(mixtapes);
 
-                    executor.execute(() -> {
-                        //Save feed mixtapes to local db
-                        AppLocalDb.db.mixtapeDao().insertMany(mixtapes);
+                            modelFirebase.getUsersByIds(newUsersIds, users -> {
+                                Log.d("TAG", "Model - firebase returned " + users.size() + " users to feed");
 
-                        modelFirebase.getUsersByIds(localUsersIds, users -> {
-                            Log.d("TAG", "Model - firebase returned " + users.size() + " users to feed");
-
-                            executor.execute(() -> {
-                                //Save feed users to local db
-                                AppLocalDb.db.userDao().insertMany(users);
-                                //Construct feed items from local data and post to caller
-                                updateFeedItems();
-                                //Post loading state to observer
-                                feedLoadingState.postValue(FeedState.loaded);
+                                executor.execute(() -> {
+                                    //Save feed users to local db
+                                    AppLocalDb.db.userDao().insertMany(users);
+                                    //Construct feed items from local data and post to caller
+                                    feed.postValue(constructFeedItems());
+                                    //Post loading state to observer
+                                    feedLoadingState.postValue(FeedState.loaded);
+                                });
                             });
                         });
                     });
                 });
-            });
+            }
         });
     }
 
-    private void updateFeedItems() {
+    //Construct feed song items objects from local db
+    private List<SongItem> constructFeedItems() {
         List<SongItem> items = new LinkedList<>();
         List<Song> songs = AppLocalDb.db.songDao().getAll();
 
@@ -354,69 +365,13 @@ public class Model {
             items.add(songItem);
         }
 
-        //Post data to caller
-        feed.postValue(items);
+        //Sort by last update date
+        items.sort((si1, si2) -> si2.getSong().getTimeModified().compareTo(si1.getSong().getTimeCreated()));
+        return items;
     }
 
-    public void refreshProfile() {
-        profileLoadingState.setValue(ProfileState.loading);
-
-        // get last local update date from the device
-        Long lastUpdateDate = MyApplication.getContext().getSharedPreferences("PROFILE", Context.MODE_PRIVATE).getLong("ProfileLastUpdateDate", 0);
-        String userId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
-
-        //Firebase get all updates since lastLocalUpdateDate
-        modelFirebase.getProfileMixtapes(lastUpdateDate, userId, mixtapes -> {
-            Log.d("TAG", "Model - firebase returned " + mixtapes.size() + " mixtapes to profile");
-
-            if (mixtapes.isEmpty()) {
-                profileLoadingState.postValue(ProfileState.loaded);
-                return;
-            }
-
-            executor.execute(() -> {
-                //Save profile mixtapes to local db
-                AppLocalDb.db.mixtapeDao().insertMany(mixtapes);
-
-                //CHECKME: check last update date is working
-                //Find and Save the latest update time to device's share preferences
-                long lastLocalUpdate = mixtapes.stream().mapToLong(Mixtape::getTimeCreated).max().getAsLong();
-                MyApplication.getContext().getSharedPreferences("PROFILE", Context.MODE_PRIVATE).edit().putLong("ProfileLastUpdateDate", lastLocalUpdate).apply();
-
-                modelFirebase.getUserById(userId, user -> {
-                    Log.d("TAG", "Model - firebase returned " + user.getDisplayName() + " user to profile ");
-
-                    executor.execute(() -> {
-                        //Save profile user to local db
-                        AppLocalDb.db.userDao().insertMultiple(user);
-
-                        //Iterate throw all user's mixtapes and save each songs list
-                        for (int i = 0; i < mixtapes.size(); i++) {
-                            int finalI = i + 1;
-                            Mixtape mixtape = mixtapes.get(i);
-
-                            modelFirebase.getSongsOfMixtape(mixtape.getMixtapeId(), songs -> {
-                                Log.d("TAG", "Model - firebase returned " + songs.size() + " songs to profile mixtape " + mixtape.getName());
-
-                                executor.execute(() -> {
-                                    //Save current mixtape songs to local db
-                                    AppLocalDb.db.songDao().insertMany(songs);
-
-                                    //Construct profile items from local data and post to caller if it the last iteration
-                                    if (finalI == mixtapes.size()) {
-                                        updateProfileItems(userId);
-                                        profileLoadingState.postValue(ProfileState.loaded);
-                                    }
-                                });
-                            });
-                        }
-                    });
-                });
-            });
-        });
-    }
-
-    private void updateProfileItems(String userId) {
+    //Construct profile mixtape items objects from local db
+    private List<MixtapeItem> constructProfileItems(String userId) {
         List<MixtapeItem> items = new LinkedList<>();
         List<Mixtape> mixtapes = AppLocalDb.db.mixtapeDao().getManyByUserId(userId);
         User user = AppLocalDb.db.userDao().getOneById(userId);
@@ -427,8 +382,9 @@ public class Model {
             items.add(mixtapeItem);
         }
 
-        //Post data to caller
-        profile.postValue(items);
+        //Sort by last update date
+        items.sort((mi1, mi2) -> mi2.getMixtape().getTimeModified().compareTo(mi1.getMixtape().getTimeCreated()));
+        return items;
     }
 
     /*____________________________________________________________________________________________*/
@@ -438,6 +394,7 @@ public class Model {
     //_________________________ Listener Interfaces _________________________
     //interface for each remote data fetching\pushing action
 
+    //_________ Multiple Objects _________
     public interface GetSongs {
         void onComplete(List<Song> songs);
     }
@@ -450,7 +407,7 @@ public class Model {
         void onComplete(List<User> users);
     }
 
-
+    //_________ Single Object _________
     public interface GetSong {
         void onComplete(Song song);
     }
@@ -471,7 +428,7 @@ public class Model {
         void onComplete(MixtapeItem mixtapeItem);
     }
 
-
+    //_________ Object Creation _________
     public interface AddSong {
         void onComplete(String songId);
     }
@@ -480,13 +437,17 @@ public class Model {
         void onComplete(String mixtapeId);
     }
 
-
+    //_________ Other_________
     public interface SaveImageListener {
         void onComplete(String url);
     }
 
-
     public interface UserProcess {
         void onComplete(User user);
+    }
+
+    //_________ Object Updating _________
+    public interface UpdateSong {
+        void onComplete();
     }
 }

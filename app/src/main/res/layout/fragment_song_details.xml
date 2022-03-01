@@ -8,7 +8,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:padding="10dp">
 
         <TextView
@@ -18,11 +18,11 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="a Song post by"
-            android:textAlignment="center"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!--Song user data-->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/linearLayoutCompat"
             android:layout_width="wrap_content"
@@ -38,6 +38,8 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_gravity="center|top"
+                android:clickable="true"
+                android:focusable="true"
                 app:srcCompat="@drawable/empty_profile_picture_colored" />
 
             <TextView
@@ -45,10 +47,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="User"
-                android:textAlignment="center" />
+                android:text="User" />
         </androidx.appcompat.widget.LinearLayoutCompat>
 
+        <!--Song image-->
         <ImageView
             android:id="@+id/song_details_image_iv"
             android:layout_width="wrap_content"
@@ -60,6 +62,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat" />
 
+        <!--Song text data-->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -69,68 +72,40 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/song_details_image_iv">
 
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.chip.Chip
+                android:id="@+id/song_name_tv"
+                style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:startIconDrawable="@drawable/icon_note">
+                android:text="Name"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
+                app:chipIcon="@drawable/icon_note" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/song_name_tv"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:focusableInTouchMode="false"
-                    android:inputType="none"
-                    android:text="Song's Name" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.chip.Chip
+                android:id="@+id/song_artist_tv"
+                style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:startIconDrawable="@drawable/icon_mic">
+                android:text="Artist"
+                app:chipIcon="@drawable/icon_mic" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/song_artist_tv"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:focusableInTouchMode="false"
-                    android:inputType="none"
-                    android:text="Artist" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.chip.Chip
+                android:id="@+id/song_caption_tv"
+                style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:startIconDrawable="@drawable/icon_caption">
+                android:text="Caption"
+                app:chipIcon="@drawable/icon_caption" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/song_caption_tv"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:focusableInTouchMode="false"
-                    android:inputType="none"
-                    android:text="Caption" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.chip.Chip
+                android:id="@+id/song_mixtape_tv"
+                style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:startIconDrawable="@drawable/icon_cassete">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/song_mixtape_tv"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:focusableInTouchMode="false"
-                    android:inputType="none"
-                    android:text="Mixtape" />
-            </com.google.android.material.textfield.TextInputLayout>
+                android:clickable="true"
+                android:focusable="true"
+                android:text="Mixtape"
+                app:chipIcon="@drawable/icon_cassete" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
     </androidx.constraintlayout.widget.ConstraintLayout>

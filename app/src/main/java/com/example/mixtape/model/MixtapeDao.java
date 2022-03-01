@@ -32,5 +32,4 @@ public interface MixtapeDao {
 
     @Delete
     void delete(Mixtape mixtape);
-
 }

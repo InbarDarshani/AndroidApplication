@@ -11,10 +11,21 @@
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/darkPurple</item>
         <item name="colorAccent">@color/beige</item>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
         <item name="android:colorBackground">@color/white</item>
         <item name="fontFamily">@font/family_quicksand</item>
         <item name="android:fontFamily">@font/family_quicksand</item>
-        <item name="android:statusBarColor">?attr/colorPrimary</item>
+        <item name="android:textViewStyle">@style/TextAppearance.Mixtape.TextViewStyle</item>
+    </style>
+
+    <!--TextView-->
+    <style name="TextAppearance.Mixtape.TextViewStyle" parent="TextAppearance.AppCompat">
+        <item name="fontFamily">@font/family_quicksand</item>
+        <item name="android:fontFamily">@font/family_quicksand</item>
+        <item name="android:textAlignment">center</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:textSize">16sp</item>
     </style>
 
     <!--Top Toolbar-->
@@ -26,6 +37,7 @@
         <item name="android:background">@color/beige</item>
         <item name="android:drawablePadding">20dp</item>
     </style>
+
     <style name="TextAppearance.Mixtape.Toolbar" parent="">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">@color/white</item>
@@ -37,29 +49,47 @@
         <item name="labelVisibilityMode">unlabeled</item>
         <item name="itemIconTint">@color/white</item>
         <item name="itemIconSize">30dp</item>
-        <item name="itemActiveIndicatorStyle">@style/Widget.Mixtape.BottomNavlbar.ItemActiveIndicator</item>
+        <item name="itemActiveIndicatorStyle">
+            @style/Widget.Mixtape.BottomNavlbar.ItemActiveIndicator
+        </item>
     </style>
+
     <style name="Widget.Mixtape.BottomNavlbar.ItemActiveIndicator" parent="">
         <item name="android:color">@color/transparent</item>
     </style>
 
-    <!--Buttons-->
-    <style name="Widget.Mixtape.Button" parent="Widget.Material3.Button">
-        <!--        <item name="android:textColor">@color/darkPurple</item>-->
-        <!--        <item name="backgroundTint">@color/beige</item>-->
+    <!--Chips-->
+    <!--Chip - Large chip to use as clickable text view button-->
+    <style name="Widget.Mixtape.Chip.Large" parent="Widget.Material3.Chip.Assist">
+        <item name="android:textAlignment">center</item>
+        <item name="chipBackgroundColor">@color/white</item>
+        <item name="colorOnSurface">@color/transparent</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="textStartPadding">10dp</item>
+        <item name="iconStartPadding">6dp</item>
+        <item name="chipIconTint">@color/dark</item>
+        <item name="chipIconSize">25dp</item>
+        <item name="chipMinHeight">48dp</item>
+        <item name="chipCornerRadius">7dp</item>
+        <item name="android:layout_marginTop">5dp</item>
+        <item name="android:layout_marginBottom">5dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Mixtape.TextViewStyle</item>
+        <item name="android:clickable">false</item>
+        <item name="android:focusable">false</item>
+        <item name="android:checkable">false</item>
+        <item name="android:selectable">false</item>
     </style>
 
-    <style name="Widget.Mixtape.Button.TextButton" parent="Widget.Material3.Button.TextButton">
-        <!--        <item name="android:textColor">@color/darkPurple</item>-->
+    <!--Chip - Small chip un-clickable-->
+    <style name="Widget.Mixtape.Chip.Small.NoBorder" parent="Widget.Mixtape.Chip.Large">
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="iconStartPadding">0dp</item>
+        <item name="chipIconSize">20dp</item>
+        <item name="chipMinHeight">30dp</item>
+        <item name="chipMinTouchTargetSize">30dp</item>
+        <item name="android:layout_marginTop">1dp</item>
+        <item name="android:layout_marginBottom">1dp</item>
+        <item name="android:textColor">@color/dark</item>
+        <item name="android:enabled">false</item>
     </style>
-
-    <!--Text Input-->
-    <style name="Widget.Mixtape.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <!--        <item name="hintTextColor">@color/textColorPrimary</item>-->
-        <!--        <item name="android:paddingBottom">8dp</item>-->
-        <!--        <item name="boxStrokeColor">@color/lightPurple</item>-->
-    </style>
-
-
-
 </resources>

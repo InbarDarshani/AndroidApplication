@@ -12,7 +12,7 @@ import java.util.Map;
 @Dao
 public interface UserDao {
 
-    @Query("SELECT * FROM Song")
+    @Query("SELECT * FROM User")
     List<User> getAll();
 
     @Query("SELECT * FROM User WHERE userId = :userId")

@@ -107,7 +107,8 @@
                 android:id="@+id/song_mixtape_et"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:inputType="none" />
+                android:inputType="none"
+                android:enabled="false"/>
 
         </com.google.android.material.textfield.TextInputLayout>
 

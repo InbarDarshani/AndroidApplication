@@ -1,5 +1,6 @@
 package com.example.mixtape.app;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 
@@ -22,7 +23,10 @@ import com.example.mixtape.MyApplication;
 import com.example.mixtape.R;
 import com.example.mixtape.model.MixtapeItem;
 import com.example.mixtape.model.Model;
+import com.example.mixtape.viewmodels.MixtapeDetailsViewModel;
+import com.example.mixtape.viewmodels.MixtapeDetailsViewModelFactory;
 import com.example.mixtape.viewmodels.ProfileViewModel;
+import com.example.mixtape.viewmodels.ProfileViewModelFactory;
 import com.squareup.picasso.Picasso;
 
 public class ProfileFragment extends Fragment {
@@ -36,7 +40,8 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        String userId = ProfileFragmentArgs.fromBundle(getArguments()).getUserId();
+        viewModel = new ViewModelProvider(this, new ProfileViewModelFactory(userId)).get(ProfileViewModel.class);
     }
 
     @Nullable
@@ -57,7 +62,7 @@ public class ProfileFragment extends Fragment {
 
         //Setup refresh view, attach OnRefresh function, set refreshing state according to Model's loading state
         swipeRefresh = view.findViewById(R.id.profile_swiperefresh);
-        swipeRefresh.setOnRefreshListener(Model.instance::refreshProfile);
+        swipeRefresh.setOnRefreshListener(() ->  viewModel.refresh());
         swipeRefresh.setRefreshing(Model.instance.getProfileLoadingState().getValue() == Model.ProfileState.loading);
 
         //Set list and adapter
@@ -76,12 +81,12 @@ public class ProfileFragment extends Fragment {
         });
 
         //Setup observer for ViewModel's livedata, set OnChange action
-        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> ProfileFragment.this.refresh());
+        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> refresh());
 
         //Setup observer for Model's profile loading state
         Model.instance.getProfileLoadingState().observe(getViewLifecycleOwner(), profileLoadingState -> {
-            //Change SwipeRefreshLayout according to loading state
-            swipeRefresh.setRefreshing(profileLoadingState != Model.ProfileState.loaded);
+            //Change SwipeRefresh according to loading state
+            swipeRefresh.setRefreshing(profileLoadingState == Model.ProfileState.loading);
 
             //Treat an empty list state
             if (profileLoadingState == Model.ProfileState.empty) {
@@ -127,7 +132,7 @@ public class ProfileFragment extends Fragment {
             });
         }
 
-        void bind(MixtapeItem mixtapeItem) {
+        void bind(@NonNull MixtapeItem mixtapeItem) {
             //Bind Mixtape data of this song post
             profilerow_mixtape_name_tv.setText(mixtapeItem.mixtape.getName());
             profilerow_mixtape_description_tv.setText(mixtapeItem.mixtape.getDescription());

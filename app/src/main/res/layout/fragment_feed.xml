@@ -15,7 +15,6 @@
         android:layout_marginTop="10dp"
         android:text="No song posts available yet"
         style="@style/TextAppearance.Material3.BodyMedium"
-        android:textAlignment="center"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

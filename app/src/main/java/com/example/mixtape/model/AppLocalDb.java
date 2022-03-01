@@ -1,16 +1,10 @@
 package com.example.mixtape.model;
 
 import androidx.room.Database;
-import androidx.room.Embedded;
-import androidx.room.Relation;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
-import androidx.room.TypeConverter;
 
 import com.example.mixtape.MyApplication;
-
-import java.sql.Date;
-import java.util.List;
 
 //Working with the local database in the device
 
@@ -22,6 +16,7 @@ abstract class AppLocalDbRepository extends RoomDatabase {
     public abstract MixtapeDao mixtapeDao();
 
     public abstract UserDao userDao();
+
 }
 
 public class AppLocalDb {

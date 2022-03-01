@@ -41,6 +41,7 @@ public class FeedFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        //Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_feed, container, false);
 
         //Get views
@@ -72,7 +73,7 @@ public class FeedFragment extends Fragment {
         //Setup observer for Model's feed loading state
         Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), feedLoadingState -> {
             //Change SwipeRefreshLayout according to loading state
-            swipeRefresh.setRefreshing(feedLoadingState != Model.FeedState.loaded);
+            swipeRefresh.setRefreshing(feedLoadingState == Model.FeedState.loading);
 
             //Treat an empty list state
             if (feedLoadingState == Model.FeedState.empty) {

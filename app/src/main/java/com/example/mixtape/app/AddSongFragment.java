@@ -5,14 +5,17 @@ import static android.app.Activity.RESULT_OK;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import android.provider.MediaStore;
@@ -29,36 +32,39 @@ import android.widget.ProgressBar;
 
 import com.example.mixtape.MyApplication;
 import com.example.mixtape.R;
-import com.example.mixtape.model.Mixtape;
 import com.example.mixtape.model.Model;
 import com.example.mixtape.model.Song;
+import com.example.mixtape.viewmodels.AddSongViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.io.IOException;
 
 public class AddSongFragment extends Fragment {
+    AddSongViewModel viewModel;
     MaterialAlertDialogBuilder alert;
     ImageView song_image_iv;
     ImageButton song_gallery_btn, song_cam_btn;
     EditText song_name_et, song_artist_et, song_caption_et;
     AutoCompleteTextView song_mixtape_et;
+    ArrayAdapter<String> adapter;
     TextInputLayout song_mixtape_til;
     Button song_post_btn;
     ProgressBar progressBar;
-    Bitmap imageBitmap;
-    String currentUserId;
+    Bitmap inputImage;
+    String inputSongName, inputArtist, inputCaption, inputMixtapeId, currentUserId;
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        viewModel = new ViewModelProvider(this).get(AddSongViewModel.class);
+    }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_add_song, container, false);
-
-        //Get userId
-        currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
 
         //Get views
         song_image_iv = view.findViewById(R.id.song_image_iv);
@@ -71,6 +77,7 @@ public class AddSongFragment extends Fragment {
         song_mixtape_til = view.findViewById(R.id.song_mixtape_til);
         song_post_btn = view.findViewById(R.id.song_post_btn);
         progressBar = view.findViewById(R.id.add_song_progressbar);
+
         //Set buttons listeners
         song_post_btn.setOnClickListener(v -> save());
         song_cam_btn.setOnClickListener(v -> openCam());
@@ -80,20 +87,25 @@ public class AddSongFragment extends Fragment {
         alert = new MaterialAlertDialogBuilder(this.getContext());
         alert.setTitle("Error");
 
-        //Setup dropdown list with user's mixtapes
-        currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
-        Model.instance.getMixtapesOfUser(currentUserId, mixtapes -> {
-            //TODO: ViewModel!
+        //Setup user's mixtapes list adapter
+        adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line);
+        song_mixtape_et.setOnItemClickListener((parent, view1, position, id) -> {
+            inputMixtapeId = viewModel.getMixtapes().get(position).getMixtapeId();
+        });
 
-            //TODO: default mixtape and createMixtape dialog
-            if (mixtapes.isEmpty()) {
+        //Observe user's mixtapes live data
+        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
+            //Treat empty list
+            //TODO: Add button (dialog) to create a mixtape and/or create default mixtape
+            if (viewModel.getMixtapes().isEmpty()) {
                 song_mixtape_til.setHint("No Mixtapes created yet");
                 song_mixtape_et.setEnabled(false);
-            }
-            if (!currentUserId.isEmpty() && !mixtapes.isEmpty()) {
-                String[] options = mixtapes.stream().map(Mixtape::getName).toArray(String[]::new);
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line, options);
+            } else {
+                //Setup dropdown list with user's mixtapes
+                adapter.clear();
+                adapter.addAll(viewModel.getMixtapesOptions());
                 song_mixtape_et.setAdapter(adapter);
+                song_mixtape_et.setEnabled(true);
             }
         });
 
@@ -101,22 +113,43 @@ public class AddSongFragment extends Fragment {
     }
 
     private void openGallery() {
-
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK);
+        galleryIntent.setType("image/*");
+        activityResultLauncher.launch(galleryIntent);
     }
 
     private void openCam() {
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startCamera.launch(cameraIntent);
+        activityResultLauncher.launch(cameraIntent);
     }
 
-    ActivityResultLauncher<Intent> startCamera = registerForActivityResult(
+    //Activity launcher for result
+    ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == RESULT_OK) {
-                        imageBitmap = (Bitmap) result.getData().getExtras().get("data");
-                        song_image_iv.setImageBitmap(imageBitmap);
+                        //Create initial bitmap
+                        Bitmap bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+
+                        //If its a Camera activity get bitmap data directly from extras
+                        if (result.getData().hasExtra("data")) {
+                            bitmap = (Bitmap) result.getData().getExtras().get("data");
+                        }
+                        //If its a Gallery activity create bitmap data from image uri
+                        else {
+                            try {
+                                Uri imageUri = result.getData().getData();
+                                bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        //Convert bitmap image to thumbnail and set in view
+                        //TODO: set proper size
+                        inputImage = Bitmap.createScaledBitmap(bitmap, 189, 252, false);
+                        song_image_iv.setImageBitmap(inputImage);
                     }
                 }
             });
@@ -126,25 +159,31 @@ public class AddSongFragment extends Fragment {
         song_post_btn.setEnabled(false);
         song_cam_btn.setEnabled(false);
         song_gallery_btn.setEnabled(false);
+        song_mixtape_et.setEnabled(false);
 
-        String name = song_name_et.getText().toString();
-        String artist = song_name_et.getText().toString();
-        String caption = song_name_et.getText().toString();
-        String mixtapeId = song_mixtape_et.getText().toString();
+        inputSongName = song_name_et.getText().toString();
+        inputArtist = song_artist_et.getText().toString();
+        inputCaption = song_caption_et.getText().toString();
+        currentUserId = viewModel.getCurrentUser().getUserId();
 
-        Song song = new Song(name, artist, caption);
-        //CHECKME: new song with userId from shared preferences and mixtapeID from input
+        Song song = new Song(inputSongName, inputArtist, inputCaption);
         song.setUserId(currentUserId);
-        song.setMixtapeId(mixtapeId);
+        song.setMixtapeId(inputMixtapeId);
 
+        //Validate Input
+        if (inputSongName.isEmpty())
+            alert.setMessage("Please enter song's name").show();
+
+        //Save song to dbs
         Model.instance.addSong(song, songId -> {
-            if (imageBitmap != null) {
-                Model.instance.saveImage(imageBitmap, "songs", songId + ".jpg", song::setImage);
+            if (inputImage != null) {
+                Model.instance.saveImage(inputImage, "songs", songId + ".jpg", url -> {
+                    song.setImage(url);
+                    Model.instance.updateSong(song, () -> Model.instance.mainThread.post(() -> Navigation.findNavController(song_name_et).navigateUp()));
+                });
+            } else {
+                Model.instance.mainThread.post(() -> Navigation.findNavController(song_name_et).navigateUp());
             }
-
-            //navigate to song details page
-            //Navigation.findNavController(song_name_et).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment(songId));
-            Navigation.findNavController(song_name_et).navigateUp();
         });
     }
 }

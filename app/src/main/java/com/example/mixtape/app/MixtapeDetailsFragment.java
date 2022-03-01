@@ -75,6 +75,9 @@ public class MixtapeDetailsFragment extends Fragment {
             Picasso.get().load(viewModel.getUser().getImage()).into(mixtape_details_user_iv);
         mixtape_details_user_tv.setText(viewModel.getUser().getDisplayName());
 
+        //Set on click navigation
+        mixtape_details_user_iv.setOnClickListener(v -> Navigation.findNavController(v).navigate(FeedFragmentDirections.actionGlobalProfileFragment(viewModel.getUser().getUserId())));
+
         return view;
     }
 

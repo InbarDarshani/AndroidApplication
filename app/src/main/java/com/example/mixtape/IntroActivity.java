@@ -25,7 +25,7 @@ public class IntroActivity extends AppCompatActivity {
 
         Model.instance.executor.execute(() -> {
             try {
-                Thread.sleep(4000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

@@ -10,6 +10,7 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -33,13 +34,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BaseActivity extends AppCompatActivity {
-
     NavController navController;
     AppBarConfiguration appBarConfiguration;
     Toolbar topToolbar;
     BottomNavigationView bottomNav;
     PopupMenu addMenu;
-    String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,9 +61,6 @@ public class BaseActivity extends AppCompatActivity {
 
         //Setup navigation behavior to top toolbar like navigate up and fragment's title
         NavigationUI.setupWithNavController(topToolbar, navController, appBarConfiguration);
-
-        //Get current user id
-        currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("UserId", "");
 
         //Setup TopToolbar and BottomNavigation
         topBarSetup();
@@ -102,23 +98,22 @@ public class BaseActivity extends AppCompatActivity {
         addMenu.show();
     }
 
+    @SuppressLint("NonConstantResourceId")
     private void bottomBarSetup() {
         //Setup bottom navigation bar items listeners
-        bottomNav.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                switch (item.getItemId()) {
-                    case R.id.home_icon:
-                        navController.navigate(R.id.action_global_feedFragment);
-                        return true;
-                    case R.id.add_icon:
-                        return true;
-                    case R.id.profile_icon:
-                        navController.navigate(R.id.action_global_profileFragment);
-                        return true;
-                }
-                return false;
+        bottomNav.setOnItemSelectedListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.home_icon:
+                    navController.navigate(FeedFragmentDirections.actionGlobalFeedFragment());
+                    return true;
+                case R.id.add_icon:
+                    return true;
+                case R.id.profile_icon:
+                    String userId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
+                    navController.navigate(FeedFragmentDirections.actionGlobalProfileFragment(userId));
+                    return true;
             }
+            return false;
         });
 
         //Setup add icon listener separately and override default behavior
@@ -186,10 +181,10 @@ public class BaseActivity extends AppCompatActivity {
         Song s6 = new Song("Chanel", "Frank Ocean", "alternative r&b", "");
         Song s7 = new Song("IDK You Yet", "Alexander 23", "alt z", "");
 
-        Mixtape m1 = new Mixtape("Ilan", "M1");
+        Mixtape m1 = new Mixtape("MixMix", "M1");
         Mixtape m2 = new Mixtape("MyMix1", "M2");
-        Mixtape m3 = new Mixtape("Alona's", "M3");
-        Mixtape m4 = new Mixtape("MyMix1", "M4");
+        Mixtape m3 = new Mixtape("ChillMix", "M3");
+        Mixtape m4 = new Mixtape("MyMixx", "M4");
 
         String user1 = "wShemi2Ud0PQsm1nJUSeOfgkdSj2";
         String user2 = "bJKFfI49ZrMuXpBZIUpag1ae4q52";
