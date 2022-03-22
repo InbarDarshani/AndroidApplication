@@ -59,19 +59,21 @@ public class FeedFragment extends Fragment {
         adapter = new ListAdapter();
         list.setAdapter(adapter);
 
-        //Create the row items listeners actions
+        //Create the row items listener actions
         adapter.setOnItemClickListener((v, position) -> {
             //get song item from view model
             String songId = viewModel.getSongItems().getValue().get(position).song.getSongId();
             //navigate to song details page
-            Navigation.findNavController(v).navigate(FeedFragmentDirections.actionFeedFragmentToSongDetailsFragment(songId));
+            Navigation.findNavController(v).navigate(FeedFragmentDirections.actionGlobalSongDetailsFragment(songId));
         });
 
         //Setup observer for ViewModel's livedata, set OnChange action
-        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> FeedFragment.this.refresh());
+        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> adapter.notifyDataSetChanged());
 
         //Setup observer for Model's feed loading state
         Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), feedLoadingState -> {
+            adapter.notifyDataSetChanged();
+
             //Change SwipeRefreshLayout according to loading state
             swipeRefresh.setRefreshing(feedLoadingState == Model.FeedState.loading);
 
@@ -86,11 +88,6 @@ public class FeedFragment extends Fragment {
         });
 
         return view;
-    }
-
-    //Actions to perform on data refresh in this fragment
-    private void refresh() {
-        adapter.notifyDataSetChanged();
     }
 
     //______________________ List Listeners Interface ______________________________________
@@ -134,11 +131,13 @@ public class FeedFragment extends Fragment {
             feedrow_mixtape_tv.setText(songItem.mixtape.getName());
 
             //Bind User data of this song post
+            feedrow_profile_iv.setImageResource(R.drawable.empty_user_image_colored);
             if (!songItem.user.getImage().isEmpty())
                 Picasso.get().load(songItem.user.getImage()).into(feedrow_profile_iv);
             feedrow_user_tv.setText(songItem.user.getDisplayName());
 
             //Bind song's data
+            feedrow_photo_iv.setImageResource(R.drawable.empty_song_image);
             if (!songItem.song.getImage().isEmpty())
                 Picasso.get().load(songItem.song.getImage()).into(feedrow_photo_iv);
             feedrow_song_tv.setText(songItem.song.getName());

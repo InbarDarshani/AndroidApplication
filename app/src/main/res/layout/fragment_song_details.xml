@@ -8,7 +8,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:padding="10dp">
 
         <TextView
@@ -35,12 +35,13 @@
 
             <ImageView
                 android:id="@+id/song_details_user_iv"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
                 android:layout_gravity="center|top"
                 android:clickable="true"
                 android:focusable="true"
-                app:srcCompat="@drawable/empty_profile_picture_colored" />
+                app:srcCompat="@drawable/empty_user_image_colored"
+                tools:ignore="SpeakableTextPresentCheck" />
 
             <TextView
                 android:id="@+id/song_details_user_tv"
@@ -54,9 +55,9 @@
         <ImageView
             android:id="@+id/song_details_image_iv"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="150dp"
             android:layout_marginTop="10dp"
-            android:src="@drawable/empty_photo"
+            android:src="@drawable/empty_song_image"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent"
@@ -64,6 +65,7 @@
 
         <!--Song text data-->
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/linearLayoutCompat2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -108,5 +110,31 @@
                 app:chipIcon="@drawable/icon_cassete" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/song_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat2"
+            app:srcCompat="@drawable/ic_edit_outline" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/song_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_margin="20dp"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/song_edit"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat2"
+            app:srcCompat="@drawable/ic_delete_outline" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -45,9 +46,7 @@ public class ModelFirebase {
         db.setFirestoreSettings(settings);
     }
 
-    /*____________________________________________________________________________________________*/
     /*______________________________________ AUTHENTICATION ______________________________________*/
-    /*____________________________________________________________________________________________*/
     public FirebaseUser getCurrentUser() {
         return mAuth.getCurrentUser();
     }
@@ -119,9 +118,7 @@ public class ModelFirebase {
         Log.d("TAG", "Firebase - sign-out performed");
     }
 
-    /*____________________________________________________________________________________________*/
     /*__________________________________________ STORAGE _________________________________________*/
-    /*____________________________________________________________________________________________*/
 
     public void saveImage(Bitmap imageBitmap, String folder, String imageName, Model.SaveImageListener listener) {
         StorageReference storageRef = storage.getReference();
@@ -135,17 +132,15 @@ public class ModelFirebase {
                     listener.onComplete(uri.toString());
                 }))
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to upload image " + e.getMessage()));
-        //.addOnFailureListener(exception -> listener.onComplete(null))
     }
 
-    /*____________________________________________________________________________________________*/
     /*___________________________________________ DATA ___________________________________________*/
-    /*____________________________________________________________________________________________*/
 
     //_________ New Documents Fetching _________
     public void getFeedSongs(Long lastUpdate, Model.GetSongs listener) {
         db.collection(Song.COLLECTION_NAME)
-                .whereGreaterThanOrEqualTo("timeCreated", new Timestamp(lastUpdate, 0))
+                .whereEqualTo("deleted", false)
+                .whereGreaterThanOrEqualTo("timeModified", new Timestamp(lastUpdate, 0))
                 .get()
                 .addOnCompleteListener(task -> {
                     List<Song> songs = new LinkedList<>();
@@ -163,8 +158,9 @@ public class ModelFirebase {
 
     public void getProfileMixtapes(Long lastUpdate, String userId, Model.GetMixtapes listener) {
         db.collection(Mixtape.COLLECTION_NAME)
-                .whereEqualTo("userId", userId)  //TODO:Check equal
-                .whereGreaterThanOrEqualTo("timeCreated", new Timestamp(lastUpdate, 0))
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("deleted", false)
+                .whereGreaterThanOrEqualTo("timeModified", new Timestamp(lastUpdate, 0))
                 .get()
                 .addOnCompleteListener(task -> {
                     List<Mixtape> mixtapes = new LinkedList<>();
@@ -180,23 +176,24 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get profile mixtapes " + "\n\t" + e.getMessage()));
     }
 
-    public void getAllSongs(Model.GetSongs listener) {
+    public void getFeedDeletedSongs(Long lastUpdate, Model.GetSongs listener) {
         db.collection(Song.COLLECTION_NAME)
+                .whereEqualTo("deleted", true)
+                .whereGreaterThanOrEqualTo("timeModified", new Timestamp(lastUpdate, 0))
                 .get()
                 .addOnCompleteListener(task -> {
-                    List<Song> songs = new LinkedList<>();
+                    List<Song> songsToRemove = new LinkedList<>();
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
                             Song song = Song.create(documentSnapshot.getData());
                             song.setSongId(documentSnapshot.getId());
-                            songs.add(song);
+                            songsToRemove.add(song);
                         }
                     }
-                    listener.onComplete(songs);
+                    listener.onComplete(songsToRemove);
                 })
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get all songs " + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get deleted songs " + e.getMessage()));
     }
-
 
     //_________ Multiple Documents Fetching _________
     public void getSongsByIds(List<String> songIds, Model.GetSongs listener) {
@@ -216,7 +213,8 @@ public class ModelFirebase {
     }
 
     public void getMixtapesByIds(List<String> mixtapeIds, Model.GetMixtapes listener) {
-        db.collection(Mixtape.COLLECTION_NAME).whereIn("mixtapeId", mixtapeIds).get()
+        //'in' filters support a maximum of 10 elements in the value array.
+        db.collection(Mixtape.COLLECTION_NAME).whereIn("mixtapeId", mixtapeIds.stream().distinct().collect(Collectors.toList())).get()
                 .addOnCompleteListener(task -> {
                     List<Mixtape> mixtapes = new LinkedList<>();
                     if (task.isSuccessful()) {
@@ -232,7 +230,8 @@ public class ModelFirebase {
     }
 
     public void getUsersByIds(List<String> userIds, Model.GetUsers listener) {
-        db.collection(User.COLLECTION_NAME).whereIn("userId", userIds).get()
+        //'in' filters support a maximum of 10 elements in the value array.
+        db.collection(User.COLLECTION_NAME).whereIn("userId", userIds.stream().distinct().collect(Collectors.toList())).get()
                 .addOnCompleteListener(task -> {
                     List<User> users = new LinkedList<>();
                     if (task.isSuccessful()) {
@@ -292,7 +291,7 @@ public class ModelFirebase {
         Map<String, Object> json = song.toJson();
         addedDocRef
                 .set(json)
-                .addOnSuccessListener(unused -> listener.onComplete(song.getSongId()))
+                .addOnSuccessListener(unused -> listener.onComplete(song))
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add song " + e.getMessage()));
     }
 
@@ -303,7 +302,7 @@ public class ModelFirebase {
         Map<String, Object> json = mixtape.toJson();
         addedDocRef
                 .set(json)
-                .addOnSuccessListener(unused -> listener.onComplete(mixtape.getMixtapeId()))
+                .addOnSuccessListener(unused -> listener.onComplete(mixtape))
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add mixtape " + mixtape.getMixtapeId() + "\n\t" + e.getMessage()));
     }
 
@@ -345,14 +344,36 @@ public class ModelFirebase {
     }
 
     //_________ Document Updating _________
-    public void updateSong(Song song, Model.UpdateSong listener){
+    public void updateSong(Song song, Model.UpdateSong listener) {
+        Map<String, Object> json = song.toJson();
+        json.put("timeModified", FieldValue.serverTimestamp());     //Update timestamp
+
         db.collection(Song.COLLECTION_NAME)
                 .document(song.getSongId())
-                .set(song.toJson())
-                .addOnSuccessListener(documentSnapshot -> {
-                    listener.onComplete();
-                })
+                .set(json)
+                .addOnSuccessListener(documentSnapshot -> listener.onComplete())
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update song " + song.getSongId() + "\n\t" + e.getMessage()));
+    }
+
+    public void updateMixtape(Mixtape mixtape, Model.UpdateMixtape listener) {
+        Map<String, Object> json = mixtape.toJson();
+        json.put("timeModified", FieldValue.serverTimestamp());     //Set current timestamp
+
+        db.collection(Mixtape.COLLECTION_NAME)
+                .document(mixtape.getMixtapeId())
+                .set(json)
+                .addOnSuccessListener(documentSnapshot -> listener.onComplete())
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update mixtape " + mixtape.getMixtapeId() + "\n\t" + e.getMessage()));
+    }
+
+    public void updateUser(User user, Model.UpdateUser listener) {
+        Map<String, Object> json = user.toJson();
+
+        db.collection(User.COLLECTION_NAME)
+                .document(user.getUserId())
+                .set(json)
+                .addOnSuccessListener(documentSnapshot -> listener.onComplete())
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update user " + user.getUserId() + "\n\t" + e.getMessage()));
     }
 
 }

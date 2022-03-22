@@ -22,9 +22,10 @@ public class Song {
     public String name = "";
     public String artist = "";
     public String caption = "";
-    public String image = "";                            //TODO:
+    public String image = "";
     public Long timeModified = new Long(0);
     public Long timeCreated = new Long(0);
+    private Boolean deleted = false;
 
     //Relations
     public String userId = "";      //The User created this song post
@@ -38,10 +39,11 @@ public class Song {
         json.put("artist", artist);
         json.put("caption", caption);
         json.put("image", image);
-        json.put("timeModified", FieldValue.serverTimestamp());
-        json.put("timeCreated", FieldValue.serverTimestamp());
         json.put("userId", userId);
         json.put("mixtapeId", mixtapeId);
+        json.put("deleted", deleted);
+        json.put("timeModified", FieldValue.serverTimestamp());
+        json.put("timeCreated", FieldValue.serverTimestamp());
         return json;
     }
 
@@ -51,17 +53,19 @@ public class Song {
         String artist = (String) json.get("artist");
         String caption = (String) json.get("caption");
         String image = (String) json.get("image");
-        Long timeModified = ((Timestamp) json.get("timeModified")).getSeconds();
-        Long timeCreated = ((Timestamp) json.get("timeCreated")).getSeconds();
         String userId = (String) json.get("userId");
         String mixtapeId = (String) json.get("mixtapeId");
+        Boolean deleted = (Boolean) json.get("deleted");
+        Long timeModified = ((Timestamp) json.get("timeModified")).getSeconds();
+        Long timeCreated = ((Timestamp) json.get("timeCreated")).getSeconds();
 
-        Song song = new Song(name, artist, caption, image);
+        Song song = new Song(name, artist, caption, userId);
         song.setSongId(songId);
         song.setTimeModified(timeModified);
         song.setTimeCreated(timeCreated);
-        song.setUserId(userId);
+        song.setImage(image);
         song.setMixtapeId(mixtapeId);
+        song.setDeleted(deleted);
         return song;
     }
 
@@ -77,11 +81,11 @@ public class Song {
     }
 
     @Ignore
-    public Song(String name, String artist, String caption, String image) {
+    public Song(String name, String artist, String caption, String userId) {
         this.name = name;
         this.artist = artist;
         this.caption = caption;
-        this.image = image;
+        this.userId = userId;
     }
 
     //_________________________ Getters & Setters _________________________
@@ -157,4 +161,13 @@ public class Song {
     public void setMixtapeId(String mixtapeId) {
         this.mixtapeId = mixtapeId;
     }
+
+    public Boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
+    }
 }
+

@@ -11,11 +11,11 @@
         <item name="colorSurface">@color/white</item>
         <item name="colorOnSurface">@color/darkPurple</item>
         <item name="colorAccent">@color/beige</item>
-        <item name="android:statusBarColor">?attr/colorPrimary</item>
+        <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:colorBackground">@color/white</item>
         <item name="fontFamily">@font/family_quicksand</item>
-        <item name="android:fontFamily">@font/family_quicksand</item>
         <item name="android:textViewStyle">@style/TextAppearance.Mixtape.TextViewStyle</item>
+        <item name="toolbarStyle">@style/Widget.Mixtape.TopToolbar</item>
     </style>
 
     <!--TextView-->
@@ -25,22 +25,15 @@
         <item name="android:textAlignment">center</item>
         <item name="android:gravity">center</item>
         <item name="android:layout_gravity">center</item>
-        <item name="android:textSize">16sp</item>
     </style>
 
     <!--Top Toolbar-->
     <style name="Widget.Mixtape.TopToolbar" parent="Widget.Material3.Toolbar">
-        <item name="titleTextAppearance">@style/TextAppearance.Mixtape.Toolbar</item>
-        <item name="titleMarginBottom">15dp</item>
-        <item name="titleMarginStart">25dp</item>
-        <item name="titleMarginEnd">25dp</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Material3.TitleSmall</item>
+        <item name="titleTextColor">@color/white</item>
+        <item name="titleMarginStart">30dp</item>
         <item name="android:background">@color/beige</item>
-        <item name="android:drawablePadding">20dp</item>
-    </style>
-
-    <style name="TextAppearance.Mixtape.Toolbar" parent="">
-        <item name="android:textSize">18sp</item>
-        <item name="android:textColor">@color/white</item>
+        <item name="popupTheme">@style/Widget.Material3.PopupMenu</item>
     </style>
 
     <!--Bottom Navigation Bar-->
@@ -53,10 +46,11 @@
             @style/Widget.Mixtape.BottomNavlbar.ItemActiveIndicator
         </item>
     </style>
-
+    <!--Bottom Navigation Bar - ItemActiveIndicator-->
     <style name="Widget.Mixtape.BottomNavlbar.ItemActiveIndicator" parent="">
         <item name="android:color">@color/transparent</item>
     </style>
+
 
     <!--Chips-->
     <!--Chip - Large chip to use as clickable text view button-->

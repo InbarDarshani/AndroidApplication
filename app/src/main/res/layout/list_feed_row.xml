@@ -30,7 +30,7 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/linearLayoutCompat1"
                 app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/empty_photo" />
+                app:srcCompat="@drawable/empty_song_image" />
 
             <!--Song post user data-->
             <androidx.appcompat.widget.LinearLayoutCompat
@@ -47,7 +47,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:layout_gravity="top"
-                    app:srcCompat="@drawable/empty_profile_picture_colored" />
+                    app:srcCompat="@drawable/empty_user_image_colored" />
 
                 <TextView
                     android:id="@+id/feedrow_user_tv"

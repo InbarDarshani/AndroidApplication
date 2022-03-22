@@ -35,12 +35,12 @@
 
             <ImageView
                 android:id="@+id/mixtape_details_user_iv"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
                 android:layout_gravity="center|top"
                 android:clickable="true"
                 android:focusable="true"
-                app:srcCompat="@drawable/empty_profile_picture_colored" />
+                app:srcCompat="@drawable/empty_user_image_colored" />
 
             <TextView
                 android:id="@+id/mixtape_details_user_tv"
@@ -52,6 +52,7 @@
 
         <!--Mixtape data-->
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/linearLayoutCompat2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -66,6 +67,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Title"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
                 app:chipIcon="@drawable/icon_cassete" />
 
             <com.google.android.material.chip.Chip
@@ -95,15 +97,60 @@
                         android:text="Songs"
                         android:textColor="?attr/colorOnSurface" />
 
+                    <com.google.android.material.progressindicator.CircularProgressIndicator
+                        android:id="@+id/songs_progressbar"
+                        style="@style/Widget.Material3.CircularProgressIndicator.Small"
+                        android:layout_width="150dp"
+                        android:layout_height="150dp"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="10dp"
+                        android:indeterminate="true"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/songs_empty_tv"
+                        style="@style/TextAppearance.Material3.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="10dp"
+                        android:text="No songs"
+                        android:visibility="gone" />
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/mixtape_songs_rv"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="5dp" />
                 </androidx.appcompat.widget.LinearLayoutCompat>
-
             </com.google.android.material.card.MaterialCardView>
 
         </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/mixtap_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="20dp"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat2"
+            app:srcCompat="@drawable/ic_edit_outline" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/mixtape_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_margin="20dp"
+            android:visibility="invisible"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/mixtap_edit"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat2"
+            app:srcCompat="@drawable/ic_delete_outline" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

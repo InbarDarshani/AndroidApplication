@@ -2,17 +2,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/home_icon"
+        android:id="@+id/feedFragment"
         android:enabled="true"
         android:icon="@drawable/selector_home"
         android:title="" />
     <item
-        android:id="@+id/add_icon"
+        android:id="@+id/addSongFragment"
         android:enabled="true"
         android:icon="@drawable/selector_add"
         android:title="" />
     <item
-        android:id="@+id/profile_icon"
+        android:id="@+id/profileFragment"
         android:enabled="true"
         android:icon="@drawable/selector_profile"
         android:title="" />

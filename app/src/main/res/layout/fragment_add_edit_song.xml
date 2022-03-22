@@ -9,14 +9,25 @@
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="10dp"
         android:orientation="vertical"
+        android:padding="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            style="@style/Widget.Material3.CircularProgressIndicator.Medium"
+            android:id="@+id/add_song_progressbar"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="10dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
         <TextView
+            android:id="@+id/page_title_tv"
             style="@style/TextAppearance.Material3.HeadlineSmall"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -34,15 +45,18 @@
 
             <ImageView
                 android:id="@+id/song_image_iv"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:src="@drawable/empty_photo" />
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:src="@drawable/empty_song_image" />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/song_gallery_btn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|left"
+                android:layout_marginLeft="5dp"
+                android:layout_marginBottom="5dp"
                 app:fabSize="mini"
                 app:srcCompat="@drawable/ic_image" />
 
@@ -51,6 +65,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|right"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="5dp"
                 app:fabSize="mini"
                 app:srcCompat="@drawable/ic_camera" />
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
@@ -59,7 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Song's Name"
+            android:hint="Name"
             app:startIconDrawable="@drawable/icon_note">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -94,22 +110,40 @@
                 android:layout_height="match_parent" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/song_mixtape_til"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
+            android:text="Choose a Mixtape or type to create a new one"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/song_mixtape_name_til"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:hint="Mixtape"
             app:startIconDrawable="@drawable/icon_cassete">
 
             <AutoCompleteTextView
-                android:id="@+id/song_mixtape_et"
+                android:id="@+id/song_mixtape_name_actv"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:inputType="none"
-                android:enabled="false"/>
+                android:enabled="false"
+                android:inputType="textAutoComplete" />
+        </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/song_mixtape_description_til"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Mixtape Description"
+            android:visibility="gone"
+            app:startIconDrawable="@drawable/icon_caption">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -119,15 +153,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="Post" />
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            android:id="@+id/add_song_progressbar"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_gravity="center"
-            android:layout_marginTop="10dp"
-            android:indeterminate="true"
-            android:visibility="gone" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </ScrollView>

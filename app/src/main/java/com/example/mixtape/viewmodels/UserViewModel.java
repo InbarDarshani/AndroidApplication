@@ -14,19 +14,21 @@ import com.example.mixtape.model.User;
 
 import java.util.List;
 
-public class ProfileViewModel extends ViewModel {
+public class UserViewModel extends ViewModel {
     private User user;
-    private LiveData<List<MixtapeItem>> mixtapeItems = new MutableLiveData<>();
+    private MutableLiveData<List<MixtapeItem>> mixtapeItems = new MutableLiveData<>();
 
-    public ProfileViewModel(String userId) {
+    public UserViewModel(String userId) {
         Model.instance.getUser(userId, dbUser -> {
             user = dbUser;
-            refresh();
+            mixtapeItems = Model.instance.getUserProfile(user.getUserId());
         });
     }
 
     public void refresh() {
-        mixtapeItems = Model.instance.getUserProfile(user.getUserId());
+        Model.instance.getUserProfile(user.getUserId(), localMixtapeItems -> {
+            mixtapeItems.postValue(localMixtapeItems);
+        });
     }
 
     public User getUser() {

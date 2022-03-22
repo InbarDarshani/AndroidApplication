@@ -30,7 +30,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Mixtape title"
+            android:hint="Title"
             app:startIconDrawable="@drawable/icon_cassete">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -55,7 +55,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Mixtape"
+            android:hint="Songs"
             app:startIconDrawable="@drawable/icon_note">
 
             <AutoCompleteTextView
@@ -72,6 +72,7 @@
             android:text="Create" />
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
+            style="@style/Widget.Material3.CircularProgressIndicator.Medium"
             android:id="@+id/add_mixtape_progressbar"
             android:layout_width="150dp"
             android:layout_height="150dp"

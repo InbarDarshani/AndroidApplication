@@ -10,13 +10,11 @@ import android.view.ViewGroup;
 
 import com.example.mixtape.R;
 
-//TOREMOVE ?
-public class AddMixtapeFragment extends Fragment {
+public class EditMixtapeFragment extends Fragment {
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_add_edit_mixtape, container, false);
+        return inflater.inflate(R.layout.fragment_edit_mixtape, container, false);
     }
 }

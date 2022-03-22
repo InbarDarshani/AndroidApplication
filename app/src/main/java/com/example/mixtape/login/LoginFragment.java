@@ -32,8 +32,7 @@ public class LoginFragment extends Fragment {
     boolean newUser = false;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         //Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_login, container, false);
 
@@ -48,7 +47,7 @@ public class LoginFragment extends Fragment {
         alert = new MaterialAlertDialogBuilder(this.getContext());
         alert.setTitle("Login Error");
 
-        //Set LoginState Observer
+        //Set LoginState Observer within this login activity lifecycle
         Model.instance.getUserLoginState().observe(getViewLifecycleOwner(), loginState -> {
             if (loginState == Model.LoginState.error)
                 alert.setMessage(Model.instance.dbError).show();

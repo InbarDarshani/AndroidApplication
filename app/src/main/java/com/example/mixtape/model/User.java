@@ -17,10 +17,10 @@ public class User {
     //Properties
     @PrimaryKey
     @NonNull
-    public String userId = "";
-    public String email = "";
-    public String displayName = "";
-    public String image = "";
+    private String userId = "";
+    private String email = "";
+    private String displayName = "";
+    private String image = "";
 
     //_________________________ Functions _________________________
     public Map<String, Object> toJson() {
@@ -74,7 +74,7 @@ public class User {
     }
 
     public void setDisplayName(String displayName) {
-        this.displayName = email;
+        this.displayName = displayName;
     }
 
     public String getImage() {

@@ -58,7 +58,6 @@ dependencies {
     androidTestImplementation 'junit:junit:4.12'
     annotationProcessor 'androidx.room:room-compiler:2.4.1'
 
-    //REMOVEME: lifecycle
     def lifecycle_version = "2.4.1"
     implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
 

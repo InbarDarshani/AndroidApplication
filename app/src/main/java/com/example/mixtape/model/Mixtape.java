@@ -19,11 +19,12 @@ public class Mixtape {
     //Properties
     @PrimaryKey
     @NonNull
-    public String mixtapeId = "";
-    public String name = "";
-    public String description = "";
-    public Long timeModified = new Long( 0);
-    public Long timeCreated = new Long( 0);
+    private String mixtapeId = "";
+    private String name = "";
+    private String description = "";
+    private Long timeModified = new Long(0);
+    private Long timeCreated = new Long(0);
+    private Boolean deleted = false;
 
     //Relations
     public String userId = "";      //The User created this mixtape
@@ -34,9 +35,10 @@ public class Mixtape {
         json.put("mixtapeId", mixtapeId);
         json.put("name", name);
         json.put("description", description);
+        json.put("userId", userId);
+        json.put("deleted", deleted);
         json.put("timeModified", FieldValue.serverTimestamp());
         json.put("timeCreated", FieldValue.serverTimestamp());
-        json.put("userId", userId);
         return json;
     }
 
@@ -44,25 +46,34 @@ public class Mixtape {
         String mixtapeId = (String) json.get("mixtapeId");
         String name = (String) json.get("name");
         String description = (String) json.get("description");
+        String userId = (String) json.get("userId");
+        Boolean deleted = (Boolean) json.get("deleted");
         Long timeModified = ((Timestamp) json.get("timeModified")).getSeconds();
         Long timeCreated = ((Timestamp) json.get("timeCreated")).getSeconds();
-        String userId = (String) json.get("userId");
 
-        Mixtape mixtape = new Mixtape(name, description);
+        Mixtape mixtape = new Mixtape(name, description, userId);
         mixtape.setMixtapeId(mixtapeId);
         mixtape.setTimeModified(timeModified);
         mixtape.setTimeCreated(timeCreated);
-        mixtape.setUserId(userId);
+        mixtape.setDeleted(deleted);
         return mixtape;
     }
 
     //_________________________ Constructors _________________________
-    public Mixtape() {}
+    public Mixtape() {
+    }
 
     @Ignore
     public Mixtape(String name, String description) {
         this.name = name;
         this.description = description;
+    }
+
+    @Ignore
+    public Mixtape(String name, String description, String userId) {
+        this.name = name;
+        this.description = description;
+        this.userId = userId;
     }
 
     //_________________________ Getters & Setters _________________________
@@ -112,5 +123,13 @@ public class Mixtape {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public Boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
     }
 }

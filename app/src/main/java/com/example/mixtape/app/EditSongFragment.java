@@ -15,10 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
 
 import android.provider.MediaStore;
@@ -32,22 +29,24 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.example.mixtape.MyApplication;
-import com.example.mixtape.NavGraphDirections;
 import com.example.mixtape.R;
 import com.example.mixtape.model.Mixtape;
 import com.example.mixtape.model.Model;
 import com.example.mixtape.model.Song;
-import com.example.mixtape.viewmodels.AddSongViewModel;
+import com.example.mixtape.viewmodels.EditSongViewModel;
+import com.example.mixtape.viewmodels.EditSongViewModelFactory;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
+import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-public class AddSongFragment extends Fragment {
-    AddSongViewModel viewModel;
+public class EditSongFragment extends Fragment {
+    EditSongViewModel viewModel;
     MaterialAlertDialogBuilder alert;
     ImageView song_image_iv;
     ImageButton song_gallery_btn, song_cam_btn;
@@ -64,14 +63,18 @@ public class AddSongFragment extends Fragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        viewModel = new ViewModelProvider(this).get(AddSongViewModel.class);
+        String songId = EditSongFragmentArgs.fromBundle(getArguments()).getSongId();
+        viewModel = new ViewModelProvider(this, new EditSongViewModelFactory(songId)).get(EditSongViewModel.class);
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        //Inflate the layout for this fragment
+        //Inflate the layout for this fragment using add song fragment layout
         View view = inflater.inflate(R.layout.fragment_add_edit_song, container, false);
+        //Edit page view
+        ((TextView) view.findViewById(R.id.page_title_tv)).setText("Edit Song");
+        ((Button) view.findViewById(R.id.song_post_btn)).setText("Save");
 
         //Get views
         song_image_iv = view.findViewById(R.id.song_image_iv);
@@ -86,6 +89,27 @@ public class AddSongFragment extends Fragment {
         song_post_btn = view.findViewById(R.id.song_post_btn);
         progressBar = view.findViewById(R.id.add_song_progressbar);
 
+        viewModel.getSongItem().observe(getViewLifecycleOwner(), songItem -> {
+            bind();
+            setup();
+        });
+
+        return view;
+    }
+
+    private void bind() {
+        //Bind Mixtape data of this song post
+        song_mixtape_name_actv.setText(viewModel.getMixtape().getName());
+
+        //Bind song's data
+        if (!viewModel.getSong().getImage().isEmpty())
+            Picasso.get().load(viewModel.getSong().getImage()).into(song_image_iv);
+        song_name_et.setText(viewModel.getSong().getName());
+        song_artist_et.setText(viewModel.getSong().getArtist());
+        song_caption_et.setText(viewModel.getSong().getCaption());
+    }
+
+    private void setup() {
         //Setup buttons listeners
         song_post_btn.setOnClickListener(v -> validateAndSave());
         song_cam_btn.setOnClickListener(v -> openCam());
@@ -121,8 +145,6 @@ public class AddSongFragment extends Fragment {
             song_mixtape_name_actv.setAdapter(adapter);
             song_mixtape_name_actv.setEnabled(true);
         });
-
-        return view;
     }
 
     //Activity launcher for result
@@ -173,12 +195,19 @@ public class AddSongFragment extends Fragment {
     }
 
     private void validateAndSave() {
+        //Get user's inputs
         inputSongName = song_name_et.getText().toString();
         inputArtist = song_artist_et.getText().toString();
         inputCaption = song_caption_et.getText().toString();
         inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
         inputNewMixtapeDescription = song_mixtape_description_til.getEditText().getText().toString();
         currentUserId = viewModel.getCurrentUser().getUserId();
+
+        //If the mixtape text is one of the mixtape options
+        if (Arrays.stream(viewModel.getMixtapesOptions()).anyMatch(s -> s.equals(inputNewMixtapeName))) {
+            int position = adapter.getPosition(inputNewMixtapeName);
+            inputChosenMixtape = viewModel.getMixtapes().get(position);
+        }
 
         //Validate Input
         if (inputSongName.isEmpty())
@@ -196,37 +225,33 @@ public class AddSongFragment extends Fragment {
         song_gallery_btn.setEnabled(false);
         song_mixtape_name_actv.setEnabled(false);
 
-        Song song = new Song(inputSongName, inputArtist, inputCaption, currentUserId);
+        Song song = viewModel.getSong();
+        song.setName(inputSongName);
+        song.setArtist(inputArtist);
+        song.setCaption(inputCaption);
 
-        //Add Song with image and new mixtape
+        //Update Song with image and new mixtape
         if (inputImage != null && inputChosenMixtape == null) {
-            Model.instance.addSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> toSongDetails(dbSong.getSongId()));
+            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> back(dbSong.getSongId()));
         }
-        //Add Song with image and existing mixtape
+        //Update Song with image and existing mixtape
         if (inputImage != null && inputChosenMixtape != null) {
             song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.addSong(song, inputImage, dbSong -> toSongDetails(dbSong.getSongId()));
+            Model.instance.updateSong(song, inputImage, dbSong -> back(dbSong.getSongId()));
         }
-        //Add Song with no image and new mixtape
+        //Update Song with no image and new mixtape
         if (inputImage == null && inputChosenMixtape == null) {
-            Model.instance.addSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> toSongDetails(dbSong.getSongId()));
+            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> back(dbSong.getSongId()));
         }
-        //Add Song with no image and existing mixtape
+        //Update Song with no image and existing mixtape
         if (inputImage == null && inputChosenMixtape != null) {
             song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.addSong(song, dbSong -> toSongDetails(dbSong.getSongId()));
+            Model.instance.updateSong(song, dbSong -> back(dbSong.getSongId()));
         }
     }
 
-    private void toSongDetails(String songId) {
-        //TOCHECK:!!
-        //Remove this fragment from back stack and navigate to the created song details
-        FragmentManager manager = getParentFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        transaction.remove(this);
-        transaction.commit();
-        manager.popBackStack();
-        //Navigation.findNavController(song_name_et).navigate(AddSongFragmentDirections.actionGlobalSongDetailsFragment(songId));
-        Navigation.findNavController(song_name_et).navigate(NavGraphDirections.actionGlobalSongDetailsFragment(songId));
+    private void back(String songId) {
+        //TODO:
+        Navigation.findNavController(song_name_et).navigateUp();
     }
 }
