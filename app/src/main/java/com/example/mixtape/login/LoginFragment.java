@@ -106,6 +106,11 @@ public class LoginFragment extends Fragment {
         }
 
         if (newUser) {
+            if (firstnameInput.isEmpty() || lastnameInput.isEmpty()) {
+                alert.setMessage("Please fill first and last name").show();
+                return false;
+            }
+
             Pattern requirements = Pattern.compile("^(?=.*[A-Za-z])(?=.*[0-9]).{6,}$");
             Matcher matcher = requirements.matcher(passwordInput);
             if (!matcher.matches()) {
