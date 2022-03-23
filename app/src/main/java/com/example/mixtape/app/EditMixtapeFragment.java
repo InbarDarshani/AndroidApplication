@@ -182,8 +182,9 @@ public class EditMixtapeFragment extends Fragment {
         void bind(Song song) {
             //Treat an existing song of this mixtape
             if (viewModel.getMixtapeSongs().contains(song)) {
+                //TODO?: if song removed add to default mixtape instead
                 //Set it unclickable so it wont remain without containing mixtape
-                this.itemView.setClickable(false);              //TODO?: if song removed add to default mixtape instead
+                this.itemView.setClickable(false);
                 mixtaperow_song_checkable_cb.setEnabled(false);
                 //Set state and checkbox view
                 this.isChecked = true;
