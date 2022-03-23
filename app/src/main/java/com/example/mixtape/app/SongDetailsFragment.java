@@ -41,7 +41,6 @@ public class SongDetailsFragment extends Fragment {
         viewModel = new ViewModelProvider(this, new SongDetailsViewModelFactory(songId)).get(SongDetailsViewModel.class);
     }
 
-    @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment
@@ -58,10 +57,26 @@ public class SongDetailsFragment extends Fragment {
         song_edit = view.findViewById(R.id.song_edit);
         song_delete = view.findViewById(R.id.song_delete);
 
+        //Set on click navigations
+        song_details_user_iv.setOnClickListener(v ->
+                Navigation.findNavController(v).navigate(
+                        SongDetailsFragmentDirections.actionSongDetailsFragmentToUserFragment(viewModel.getUser().getUserId())));
+        song_mixtape_tv.setOnClickListener(v ->
+                Navigation.findNavController(v).navigate(
+                        SongDetailsFragmentDirections.actionSongDetailsFragmentToMixtapeDetailsFragment(viewModel.getMixtape().getMixtapeId())));
+
         //Observe view model's data
         viewModel.getSongItem().observe(getViewLifecycleOwner(), songItem -> {
             bind();
-            setup();
+
+            //Enable clickables
+            song_details_user_iv.setClickable(true);
+            song_mixtape_tv.setEnabled(true);
+            song_edit.setEnabled(true);
+            song_delete.setEnabled(true);
+
+            //Setup view if its current user's
+            currentUserSetup();
         });
 
         return view;
@@ -90,15 +105,7 @@ public class SongDetailsFragment extends Fragment {
         song_caption_tv.setText(viewModel.getSong().getCaption());
     }
 
-    private void setup() {
-        //Set on click navigations
-        song_details_user_iv.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(
-                        SongDetailsFragmentDirections.actionSongDetailsFragmentToUserFragment(viewModel.getUser().getUserId())));
-        song_mixtape_tv.setOnClickListener(v ->
-                Navigation.findNavController(v).navigate(
-                        SongDetailsFragmentDirections.actionSongDetailsFragmentToMixtapeDetailsFragment(viewModel.getMixtape().getMixtapeId())));
-
+    private void currentUserSetup(){
         //Setup edit and delete buttons
         String currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
         if (viewModel.getUser().getUserId().equals(currentUserId)) {

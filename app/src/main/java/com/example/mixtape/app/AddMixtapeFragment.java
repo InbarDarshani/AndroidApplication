@@ -54,7 +54,7 @@ public class AddMixtapeFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_add_edit_mixtape, container, false);
 
@@ -66,19 +66,15 @@ public class AddMixtapeFragment extends Fragment {
         songsList = view.findViewById(R.id.mixtape_add_edit_songs_rv);
         mixtape_add_edit_songs_empty_tv = view.findViewById(R.id.mixtape_add_edit_songs_empty_tv);
 
-        //Setup alert dialog
-        alert = new MaterialAlertDialogBuilder(this.getContext());
-        alert.setTitle("Input Error");
-
         //Observe user's mixtapes live data
-        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
+        viewModel.getUserMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
             //Setup submit button
             mixtape_submit_btn.setEnabled(true);
             mixtape_submit_btn.setOnClickListener(v -> validateAndSave());
         });
 
         //Observe user's songs live data
-        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> {
+        viewModel.getUserSongItems().observe(getViewLifecycleOwner(), songItems -> {
             //Treat an empty list
             if (songItems.isEmpty())
                 mixtape_add_edit_songs_empty_tv.setVisibility(View.VISIBLE);
@@ -106,6 +102,10 @@ public class AddMixtapeFragment extends Fragment {
         inputDescription = mixtape_description_et.getText().toString();
         currentUserId = viewModel.getCurrentUser().getUserId();
 
+        //Setup alert dialog
+        alert = new MaterialAlertDialogBuilder(this.getContext());
+        alert.setTitle("Input Error");
+
         //Validate Input
         if (inputName.isEmpty())
             alert.setMessage("Please enter mixtapes's title").show();
@@ -127,7 +127,7 @@ public class AddMixtapeFragment extends Fragment {
                 toMixtapeDetails(dbMixtape.getMixtapeId());
             else {
                 inputChosenSongs.forEach(s -> s.setMixtapeId(mixtape.getMixtapeId()));
-                Model.instance.updateSongs(inputChosenSongs, lastSong -> {
+                Model.instance.updateSongs(inputChosenSongs, () -> {
                     toMixtapeDetails(dbMixtape.getMixtapeId());
                 });
             }
@@ -144,14 +144,13 @@ public class AddMixtapeFragment extends Fragment {
         Navigation.findNavController(mixtape_name_et).navigate(NavGraphDirections.actionGlobalMixtapeDetailsFragment(mixtapeId));
     }
 
-    //______________________ List Listeners Interface ______________________________________
-    //Interface wrapper for a list item listeners
+    //______________________ Recycler View Adapter Setup _____________________________
+    //List Listeners Interface
     interface OnItemClickListener {
         void onItemClick(View v, int position, boolean isChecked);
     }
 
-    //______________________ Recycler View Holder Class _____________________________
-    //Holds song's row view items and links them to the view resources
+    //Recycler View Holder Class
     class RowHolder extends RecyclerView.ViewHolder {
         TextView mixtaperow_song_tv;
         CheckBox mixtaperow_song_checkable_cb;
@@ -184,7 +183,7 @@ public class AddMixtapeFragment extends Fragment {
         }
     }
 
-    //______________________ Recycler View Adapter Class _____________________________
+    //Recycler View Adapter Class
     //List adapter holding also the row listeners
     class ListAdapter extends RecyclerView.Adapter<RowHolder> {
 

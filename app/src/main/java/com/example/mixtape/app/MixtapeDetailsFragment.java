@@ -70,6 +70,12 @@ public class MixtapeDetailsFragment extends Fragment {
         songsList.setLayoutManager(new LinearLayoutManager(MyApplication.getContext()));
         adapter = new ListAdapter();
         songsList.setAdapter(adapter);
+        adapter.setOnItemClickListener((v, position) -> {
+            //get song item from view model
+            String songId = viewModel.getSongs().get(position).getSongId();
+            //navigate to song details page
+            Navigation.findNavController(v).navigate(NavGraphDirections.actionGlobalSongDetailsFragment(songId));
+        });
 
         //Set on click navigation to user's profile
         mixtape_details_user_iv.setOnClickListener(v ->
@@ -79,21 +85,28 @@ public class MixtapeDetailsFragment extends Fragment {
         //Observe view model's main data
         viewModel.getMixtapeItem().observe(getViewLifecycleOwner(), mixtapeItem -> {
             bind();
-            setup();
+
+            //Enable clickables
+            mixtape_details_user_iv.setClickable(true);
+            mixtap_edit.setEnabled(true);
+            mixtape_delete.setEnabled(true);
+
+            //Setup view if its current user's
+            currentUserSetup();
         });
 
-        //Observe view model's songs state
+        //Observe view model's songs state for refreshing
         viewModel.songsLoadingState.observe(getViewLifecycleOwner(), loadingState -> {
             if (loadingState == MixtapeDetailsViewModel.SongsState.loading)
                 progressBar.setVisibility(View.VISIBLE);
 
-            if (loadingState == MixtapeDetailsViewModel.SongsState.loaded){
+            if (loadingState == MixtapeDetailsViewModel.SongsState.loaded) {
                 adapter.notifyDataSetChanged();
                 progressBar.setVisibility(View.GONE);
                 songs_empty_tv.setVisibility(View.GONE);
             }
 
-            if (loadingState == MixtapeDetailsViewModel.SongsState.empty){
+            if (loadingState == MixtapeDetailsViewModel.SongsState.empty) {
                 adapter.notifyDataSetChanged();
                 progressBar.setVisibility(View.GONE);
                 songs_empty_tv.setVisibility(View.VISIBLE);
@@ -120,15 +133,7 @@ public class MixtapeDetailsFragment extends Fragment {
         mixtape_details_user_tv.setText(viewModel.getUser().getDisplayName());
     }
 
-    private void setup() {
-        //Create the row items listener actions
-        adapter.setOnItemClickListener((v, position) -> {
-            //get song item from view model
-            String songId = viewModel.getSongs().get(position).getSongId();
-            //navigate to song details page
-            Navigation.findNavController(v).navigate(NavGraphDirections.actionGlobalSongDetailsFragment(songId));
-        });
-
+    private void currentUserSetup() {
         //Setup buttons for current user
         String currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
         if (viewModel.getUser().getUserId().equals(currentUserId)) {
@@ -154,14 +159,13 @@ public class MixtapeDetailsFragment extends Fragment {
         }
     }
 
-    //______________________ List Listeners Interface ______________________________________
-    //Interface wrapper for a list item listeners
+    //______________________ Recycler View Adapter Setup _____________________________
+    //List Listeners Interface
     interface OnItemClickListener {
         void onItemClick(View v, int position);
     }
 
-    //______________________ Recycler View Holder Class _____________________________
-    //Holds song's row view items and links them to the view resources
+    //Recycler View Holder Class
     class RowHolder extends RecyclerView.ViewHolder {
         TextView mixtaperow_song_tv;
 
@@ -183,7 +187,7 @@ public class MixtapeDetailsFragment extends Fragment {
         }
     }
 
-    //______________________ Recycler View Adapter Class _____________________________
+    //Recycler View Adapter Class
     //List adapter holding also the row listeners
     class ListAdapter extends RecyclerView.Adapter<RowHolder> {
 

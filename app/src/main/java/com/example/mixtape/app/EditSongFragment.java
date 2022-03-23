@@ -43,7 +43,6 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class EditSongFragment extends Fragment {
     EditSongViewModel viewModel;
@@ -54,7 +53,7 @@ public class EditSongFragment extends Fragment {
     ArrayAdapter<String> adapter;
     AutoCompleteTextView song_mixtape_name_actv;
     TextInputLayout song_mixtape_name_til, song_mixtape_description_til;
-    Button song_post_btn;
+    Button song_submit_btn;
     ProgressBar progressBar;
     Bitmap inputImage;
     String inputSongName, inputArtist, inputCaption, inputNewMixtapeName, inputNewMixtapeDescription, currentUserId;
@@ -67,9 +66,8 @@ public class EditSongFragment extends Fragment {
         viewModel = new ViewModelProvider(this, new EditSongViewModelFactory(songId)).get(EditSongViewModel.class);
     }
 
-    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment using add song fragment layout
         View view = inflater.inflate(R.layout.fragment_add_edit_song, container, false);
         //Edit page view
@@ -86,12 +84,53 @@ public class EditSongFragment extends Fragment {
         song_mixtape_name_til = view.findViewById(R.id.song_mixtape_name_til);
         song_mixtape_name_actv = view.findViewById(R.id.song_mixtape_name_actv);
         song_mixtape_description_til = view.findViewById(R.id.song_mixtape_description_til);
-        song_post_btn = view.findViewById(R.id.song_submit_btn);
+        song_submit_btn = view.findViewById(R.id.song_submit_btn);
         progressBar = view.findViewById(R.id.song_progressbar);
 
+        //Setup buttons listeners
+        song_submit_btn.setOnClickListener(v -> validateAndSave());
+        song_cam_btn.setOnClickListener(v -> openCam());
+        song_gallery_btn.setOnClickListener(v -> openGallery());
+
+        //Observe this song item live data
         viewModel.getSongItem().observe(getViewLifecycleOwner(), songItem -> {
             bind();
-            setup();
+
+            //Initial selected mixtape input
+            inputChosenMixtape = songItem.getMixtape();
+
+            //Enable clickables
+            song_submit_btn.setEnabled(true);
+            song_cam_btn.setEnabled(true);
+            song_gallery_btn.setEnabled(true);
+        });
+
+        //Setup user's mixtapes list
+        adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line);
+        song_mixtape_name_actv.setOnDismissListener(() -> { //onDismiss fires anytime the dropdown disappears by choosing an item or by dismissing it or by typing not found item
+            //Get autocomplete text input
+            inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
+
+            //If the text is one of the mixtape options
+            if (viewModel.existingMixtapeName(inputNewMixtapeName))
+                song_mixtape_description_til.setVisibility(View.GONE);
+            else //If the text is not one of the mixtape options
+                song_mixtape_description_til.setVisibility(View.VISIBLE);
+        });
+
+        //Observe user's mixtapes live data
+        viewModel.getUserMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
+            //Setup dropdown list with user's mixtapes
+            adapter.clear();
+            adapter.addAll(viewModel.getMixtapesOptions());
+            song_mixtape_name_actv.setAdapter(adapter);
+
+            //Enable clickables
+            song_mixtape_name_actv.setEnabled(true);
+            if (mixtapeItems.isEmpty())
+                song_mixtape_name_til.setEnabled(false);
+            else
+                song_mixtape_name_til.setEnabled(true);
         });
 
         return view;
@@ -109,44 +148,74 @@ public class EditSongFragment extends Fragment {
         song_caption_et.setText(viewModel.getSong().getCaption());
     }
 
-    private void setup() {
-        //Setup buttons listeners
-        song_post_btn.setOnClickListener(v -> validateAndSave());
-        song_cam_btn.setOnClickListener(v -> openCam());
-        song_gallery_btn.setOnClickListener(v -> openGallery());
+    private void validateAndSave() {
+        //Get user's inputs
+        inputSongName = song_name_et.getText().toString();
+        inputArtist = song_artist_et.getText().toString();
+        inputCaption = song_caption_et.getText().toString();
+        inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
+        inputNewMixtapeDescription = song_mixtape_description_til.getEditText().getText().toString();
+        currentUserId = viewModel.getCurrentUser().getUserId();
+
+        //If the mixtape text is one of the mixtape options
+        if (viewModel.existingMixtapeName(inputNewMixtapeName)) {
+            int position = adapter.getPosition(inputNewMixtapeName);
+            inputChosenMixtape = viewModel.getUserMixtapes().get(position);
+        }
 
         //Setup alert dialog
         alert = new MaterialAlertDialogBuilder(this.getContext());
         alert.setTitle("Input Error");
 
-        //Setup user's mixtapes list
-        adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line);
-        song_mixtape_name_actv.setOnDismissListener(() -> { //onDismiss fires anytime the dropdown disappears by choosing an item or by dismissing it or by typing not found item
-            //Get autocomplete text input
-            inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
-            //If the text is one of the mixtape options
-            if (Arrays.stream(viewModel.getMixtapesOptions()).anyMatch(s -> s.equals(inputNewMixtapeName))) {
-                int position = adapter.getPosition(inputNewMixtapeName);
-                inputChosenMixtape = viewModel.getMixtapes().get(position);
-                song_mixtape_description_til.setVisibility(View.GONE);
-            }
-            //If the text is not one of the mixtape options
-            else {
-                inputChosenMixtape = null;
-                song_mixtape_description_til.setVisibility(View.VISIBLE);
-            }
-        });
-
-        //Observe user's mixtapes live data
-        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
-            //Setup dropdown list with user's mixtapes
-            adapter.clear();
-            adapter.addAll(viewModel.getMixtapesOptions());
-            song_mixtape_name_actv.setAdapter(adapter);
-            song_mixtape_name_actv.setEnabled(true);
-        });
+        //Validate Input
+        if (inputSongName.isEmpty())
+            alert.setMessage("Please enter song's name").show();
+        else if (inputNewMixtapeName.isEmpty())
+            alert.setMessage("Please choose or create mixtape").show();
+        else
+            saveToDb();
     }
 
+    private void saveToDb() {
+        progressBar.setVisibility(View.VISIBLE);
+        song_submit_btn.setEnabled(false);
+        song_cam_btn.setEnabled(false);
+        song_gallery_btn.setEnabled(false);
+        song_mixtape_name_actv.setEnabled(false);
+        song_mixtape_name_til.setEnabled(false);
+
+        Song song = viewModel.getSong();
+        song.setName(inputSongName);
+        song.setArtist(inputArtist);
+        song.setCaption(inputCaption);
+
+        boolean newMixtape = !viewModel.existingMixtapeName(inputNewMixtapeName);
+
+        //Update Song with image and new mixtape
+        if (inputImage != null && newMixtape) {
+            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> back());
+        }
+        //Update Song with image and existing mixtape
+        if (inputImage != null && !newMixtape) {
+            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
+            Model.instance.updateSong(song, inputImage, dbSong -> back());
+        }
+        //Update Song with no image and new mixtape
+        if (inputImage == null && newMixtape) {
+            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> back());
+        }
+        //Update Song with no image and existing mixtape
+        if (inputImage == null && !newMixtape) {
+            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
+            Model.instance.updateSong(song, dbSong -> back());
+        }
+    }
+
+    private void back() {
+        Navigation.findNavController(song_name_et).navigateUp();
+    }
+
+    //______________________ Camera and Gallery Setup _____________________________
     //Activity launcher for result
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -192,65 +261,5 @@ public class EditSongFragment extends Fragment {
     private void openCam() {
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         activityResultLauncher.launch(cameraIntent);
-    }
-
-    private void validateAndSave() {
-        //Get user's inputs
-        inputSongName = song_name_et.getText().toString();
-        inputArtist = song_artist_et.getText().toString();
-        inputCaption = song_caption_et.getText().toString();
-        inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
-        inputNewMixtapeDescription = song_mixtape_description_til.getEditText().getText().toString();
-        currentUserId = viewModel.getCurrentUser().getUserId();
-
-        //If the mixtape text is one of the mixtape options
-        if (Arrays.stream(viewModel.getMixtapesOptions()).anyMatch(s -> s.equals(inputNewMixtapeName))) {
-            int position = adapter.getPosition(inputNewMixtapeName);
-            inputChosenMixtape = viewModel.getMixtapes().get(position);
-        }
-
-        //Validate Input
-        if (inputSongName.isEmpty())
-            alert.setMessage("Please enter song's name").show();
-        else if (inputNewMixtapeName.isEmpty())
-            alert.setMessage("Please choose or create mixtape").show();
-        else
-            saveToDb();
-    }
-
-    private void saveToDb() {
-        progressBar.setVisibility(View.VISIBLE);
-        song_post_btn.setEnabled(false);
-        song_cam_btn.setEnabled(false);
-        song_gallery_btn.setEnabled(false);
-        song_mixtape_name_actv.setEnabled(false);
-
-        Song song = viewModel.getSong();
-        song.setName(inputSongName);
-        song.setArtist(inputArtist);
-        song.setCaption(inputCaption);
-
-        //Update Song with image and new mixtape
-        if (inputImage != null && inputChosenMixtape == null) {
-            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> back());
-        }
-        //Update Song with image and existing mixtape
-        if (inputImage != null && inputChosenMixtape != null) {
-            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.updateSong(song, inputImage, dbSong -> back());
-        }
-        //Update Song with no image and new mixtape
-        if (inputImage == null && inputChosenMixtape == null) {
-            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> back());
-        }
-        //Update Song with no image and existing mixtape
-        if (inputImage == null && inputChosenMixtape != null) {
-            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.updateSong(song, dbSong -> back());
-        }
-    }
-
-    private void back() {
-        Navigation.findNavController(song_name_et).navigateUp();
     }
 }

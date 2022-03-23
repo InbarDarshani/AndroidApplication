@@ -4,8 +4,8 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.AuthResult;
@@ -15,21 +15,22 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 //Working with remote service by google - db, userAuth, storage
@@ -51,6 +52,9 @@ public class ModelFirebase {
         return mAuth.getCurrentUser();
     }
 
+
+
+
     public void signIn(String email, String password, Model.UserProcess listener) {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
@@ -63,7 +67,7 @@ public class ModelFirebase {
                     Log.d("TAG", "Firebase - sign-in success");
                     //Get User object
                     String userId = mAuth.getCurrentUser().getUid();
-                    this.getUserById(userId, listener::onComplete);
+                    this.getUserById(userId, listener);
                 });
     }
 
@@ -80,8 +84,7 @@ public class ModelFirebase {
                     //Create User object
                     FirebaseUser fbUser = mAuth.getCurrentUser();
                     String userId = fbUser.getUid();
-                    String image = "";
-                    User user = new User(userId, email, fullName, image);
+                    User user = new User(userId, email, fullName, "");
                     addUser(user);                             //Add user to user's collection
                     listener.onComplete(user);
                 });
@@ -93,21 +96,21 @@ public class ModelFirebase {
         //Get error
         Exception e = task.getException();
         if (e instanceof FirebaseAuthInvalidCredentialsException) {
-            Model.instance.dbError = "Invalid password";
+            Model.instance.authError = "Invalid password";
         } else if (e instanceof FirebaseAuthInvalidUserException) {
             String errorCode = ((FirebaseAuthInvalidUserException) e).getErrorCode();
             switch (errorCode) {
                 case "ERROR_USER_NOT_FOUND":
-                    Model.instance.dbError = "No matching account found";
+                    Model.instance.authError = "No matching account found";
                     break;
                 case "ERROR_USER_DISABLED":
-                    Model.instance.dbError = "User account has been disabled";
+                    Model.instance.authError = "User account has been disabled";
                     break;
                 case "ERROR_EMAIL_ALREADY_IN_USE":
-                    Model.instance.dbError = "Email is already in use";
+                    Model.instance.authError = "Email is already in use";
                     break;
                 default:
-                    Model.instance.dbError = e.getMessage();
+                    Model.instance.authError = e.getMessage();
                     break;
             }
         }
@@ -136,8 +139,23 @@ public class ModelFirebase {
 
     /*___________________________________________ DATA ___________________________________________*/
 
+    public void songsRealTimeUpdate() {
+        db.collection(Song.COLLECTION_NAME)
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            Log.d("TAG", "Firebase - Listen failed" + "\n\t" + error);
+                            return;
+                        }
+
+                        Model.instance.refreshFeed();
+                    }
+                });
+    }
+
     //_________ New Documents Fetching _________
-    public void getFeedSongs(Long lastUpdate, Model.GetSongs listener) {
+    public void getFeedSongs(Long lastUpdate, Model.SongsProcess listener) {
         db.collection(Song.COLLECTION_NAME)
                 .whereEqualTo("deleted", false)
                 .whereGreaterThanOrEqualTo("timeModified", new Timestamp(lastUpdate, 0))
@@ -156,7 +174,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get feed songs " + e.getMessage()));
     }
 
-    public void getUserMixtapes(Long lastUpdate, String userId, Model.GetMixtapes listener) {
+    public void getUserMixtapes(Long lastUpdate, String userId, Model.MixtapesProcess listener) {
         db.collection(Mixtape.COLLECTION_NAME)
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("deleted", false)
@@ -176,7 +194,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user mixtapes " + "\n\t" + e.getMessage()));
     }
 
-    public void getUserSongs(Long lastUpdate, String userId, Model.GetSongs listener) {
+    public void getUserSongs(Long lastUpdate, String userId, Model.SongsProcess listener) {
         db.collection(Song.COLLECTION_NAME)
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("deleted", false)
@@ -196,7 +214,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user songs " + "\n\t" + e.getMessage()));
     }
 
-    public void getFeedDeletedSongs(Long lastUpdate, Model.GetSongs listener) {
+    public void getFeedDeletedSongs(Long lastUpdate, Model.SongsProcess listener) {
         db.collection(Song.COLLECTION_NAME)
                 .whereEqualTo("deleted", true)
                 .whereGreaterThanOrEqualTo("timeModified", new Timestamp(lastUpdate, 0))
@@ -216,7 +234,7 @@ public class ModelFirebase {
     }
 
     //_________ Multiple Documents Fetching _________
-    public void getSongsByIds(List<String> songIds, Model.GetSongs listener) {
+    public void getSongsByIds(List<String> songIds, Model.SongsProcess listener) {
         db.collection(Song.COLLECTION_NAME).whereIn("songId", songIds).get()
                 .addOnCompleteListener(task -> {
                     List<Song> songs = new LinkedList<>();
@@ -232,7 +250,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get songs " + "\n\t" + e.getMessage()));
     }
 
-    public void getMixtapesByIds(List<String> mixtapeIds, Model.GetMixtapes listener) {
+    public void getMixtapesByIds(List<String> mixtapeIds, Model.MixtapesProcess listener) {
         //'in' filters support a maximum of 10 elements in the value array.
         db.collection(Mixtape.COLLECTION_NAME).whereIn("mixtapeId", mixtapeIds.stream().distinct().collect(Collectors.toList())).get()
                 .addOnCompleteListener(task -> {
@@ -249,7 +267,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get mixtapes " + "\n\t" + e.getMessage()));
     }
 
-    public void getUsersByIds(List<String> userIds, Model.GetUsers listener) {
+    public void getUsersByIds(List<String> userIds, Model.UsersProcess listener) {
         //'in' filters support a maximum of 10 elements in the value array.
         db.collection(User.COLLECTION_NAME).whereIn("userId", userIds.stream().distinct().collect(Collectors.toList())).get()
                 .addOnCompleteListener(task -> {
@@ -267,7 +285,7 @@ public class ModelFirebase {
     }
 
     //_________ Single Document Fetching _________
-    public void getSongById(String songId, Model.GetSong listener) {
+    public void getSongById(String songId, Model.SongProcess listener) {
         db.collection(Song.COLLECTION_NAME)
                 .document(songId)
                 .get()
@@ -279,7 +297,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get song " + songId + "\n\t" + e.getMessage()));
     }
 
-    public void getMixtapeById(String mixtapeId, Model.GetMixtape listener) {
+    public void getMixtapeById(String mixtapeId, Model.MixtapeProcess listener) {
         db.collection(Mixtape.COLLECTION_NAME)
                 .document(mixtapeId)
                 .get()
@@ -291,7 +309,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get mixtape " + mixtapeId + "\n\t" + e.getMessage()));
     }
 
-    public void getUserById(String userId, Model.GetUser listener) {
+    public void getUserById(String userId, Model.UserProcess listener) {
         db.collection(User.COLLECTION_NAME)
                 .document(userId)
                 .get()
@@ -304,7 +322,7 @@ public class ModelFirebase {
     }
 
     //_________ Document Creation _________
-    public void addSong(@NonNull Song song, Model.AddSong listener) {
+    public void addSong(@NonNull Song song, Model.SongProcess listener) {
         DocumentReference addedDocRef = db.collection(Song.COLLECTION_NAME).document();
         song.setSongId(addedDocRef.getId());
 
@@ -315,7 +333,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add song " + e.getMessage()));
     }
 
-    public void addMixtape(@NonNull Mixtape mixtape, Model.AddMixtape listener) {
+    public void addMixtape(@NonNull Mixtape mixtape, Model.MixtapeProcess listener) {
         DocumentReference addedDocRef = db.collection(Mixtape.COLLECTION_NAME).document();
         mixtape.setMixtapeId(addedDocRef.getId());
 
@@ -335,7 +353,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to add user " + user.getUserId() + "\n\t" + e.getMessage()));
     }
 
-    public void getMixtapesOfUser(String userId, Model.GetMixtapes listener) {
+    public void getMixtapesOfUser(String userId, Model.MixtapesProcess listener) {
         db.collection(Mixtape.COLLECTION_NAME).whereEqualTo("userId", userId).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Mixtape> mixtapes = new LinkedList<>();
@@ -349,7 +367,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get get mixtapes of user " + userId + "\n\t" + e.getMessage()));
     }
 
-    public void getSongsOfMixtape(String mixtapeId, Model.GetSongs listener) {
+    public void getSongsOfMixtape(String mixtapeId, Model.SongsProcess listener) {
         db.collection(Song.COLLECTION_NAME).whereEqualTo("mixtapeId", mixtapeId).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Song> songs = new LinkedList<>();
@@ -364,7 +382,7 @@ public class ModelFirebase {
     }
 
     //_________ Document Updating _________
-    public void updateSong(Song song, Model.UpdateSong listener) {
+    public void updateSong(Song song, Model.BasicProcess listener) {
         Map<String, Object> json = song.toJson();
         json.put("timeModified", FieldValue.serverTimestamp());     //Update timestamp
 
@@ -375,7 +393,25 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update song " + song.getSongId() + "\n\t" + e.getMessage()));
     }
 
-    public void updateMixtape(Mixtape mixtape, Model.UpdateMixtape listener) {
+    public void updateSongs(List<Song> songs, Model.BasicProcess listener) {
+        //Get a new write batch
+        WriteBatch batch = db.batch();
+
+        for (Song song : songs) {
+            Map<String, Object> json = song.toJson();
+            json.put("timeModified", FieldValue.serverTimestamp());     //Update timestamp
+            DocumentReference documentReference = db.collection(Song.COLLECTION_NAME).document(song.getSongId());
+            batch.update(documentReference, json);
+        }
+
+        //Commit the batch
+        batch.commit()
+                .addOnSuccessListener(unused -> listener.onComplete())
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update songs " + "\n\t" + e.getMessage()));
+
+    }
+
+    public void updateMixtape(Mixtape mixtape, Model.BasicProcess listener) {
         Map<String, Object> json = mixtape.toJson();
         json.put("timeModified", FieldValue.serverTimestamp());     //Set current timestamp
 
@@ -386,7 +422,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to update mixtape " + mixtape.getMixtapeId() + "\n\t" + e.getMessage()));
     }
 
-    public void updateUser(User user, Model.UpdateUser listener) {
+    public void updateUser(User user, Model.BasicProcess listener) {
         Map<String, Object> json = user.toJson();
 
         db.collection(User.COLLECTION_NAME)

@@ -26,7 +26,7 @@ public class Model {
     private final ModelFirebase modelFirebase = new ModelFirebase();
     public ExecutorService executor = Executors.newFixedThreadPool(1);
     public Handler mainThread = HandlerCompat.createAsync(Looper.getMainLooper());
-    public String dbError = "";
+    public String authError = "";
 
     private Model() {
         //Set data loading states
@@ -52,7 +52,7 @@ public class Model {
         return userLoginState;
     }
 
-    //_________________________ User Functions _________________________
+    //_________________________ Current User Functions _________________________
 
     public boolean isSignedIn() {
         return (modelFirebase.getCurrentUser() != null);
@@ -67,7 +67,7 @@ public class Model {
                 if (user == null) {
                     userLoginState.setValue(LoginState.error);
                 } else {
-                    saveUser(user);
+                    saveCurrentUser(user);
                     userLoginState.setValue(LoginState.signedin);
                 }
             });
@@ -79,7 +79,7 @@ public class Model {
             if (user == null) {
                 userLoginState.setValue(LoginState.error);
             } else {
-                saveUser(user);
+                saveCurrentUser(user);
                 userLoginState.setValue(LoginState.signedin);
             }
         });
@@ -88,12 +88,12 @@ public class Model {
     public void signOut() {
         userLoginState.setValue(LoginState.inprogress);
         modelFirebase.signOut();
-        clearUser();
+        clearCurrentUser();
         userLoginState.setValue(LoginState.signedout);
     }
 
     //Save user data to local shared preferences
-    private void saveUser(User user) {
+    private void saveCurrentUser(User user) {
         executor.execute(() -> {
             AppLocalDb.db.userDao().insertMultiple(user);
 
@@ -109,7 +109,7 @@ public class Model {
     }
 
     //Clear user data from local shared preferences
-    private void clearUser() {
+    private void clearCurrentUser() {
         executor.execute(() -> MyApplication.getContext().deleteSharedPreferences("USER"));
     }
 
@@ -156,6 +156,7 @@ public class Model {
     public LiveData<List<SongItem>> getFeed() {
         if (feed.getValue() == null) {
             refreshFeed();
+            modelFirebase.songsRealTimeUpdate();    //Activate db collection listener
         }
         return feed;
     }
@@ -191,7 +192,7 @@ public class Model {
         return userMixtapeItems;
     }
 
-    public void getUserMixtapeItems(String userId, GetMixtapeItems listener) {
+    public void getUserMixtapeItems(String userId, MixtapeItemsProcess listener) {
         //Start loading
         profileLoadingState.postValue(ProfileState.loading);
         //Get all user's mixtapes from local db
@@ -230,11 +231,11 @@ public class Model {
 
     //_________ Multiple Objects Fetching _________
 
-    public void getMixtapesOfUser(String userId, GetMixtapes listener) {
+    public void getMixtapesOfUser(String userId, MixtapesProcess listener) {
         modelFirebase.getMixtapesOfUser(userId, listener);
     }
 
-    public void getSongsOfMixtapes(String mixtapeId, GetSongs listener) {
+    public void getSongsOfMixtapes(String mixtapeId, SongsProcess listener) {
         modelFirebase.getSongsOfMixtape(mixtapeId, listener);
     }
 
@@ -259,7 +260,7 @@ public class Model {
         return songItemLiveData;
     }
 
-    public void getSongItem(String songId, GetSongItem listener) {
+    public void getSongItem(String songId, SongItemProcess listener) {
         executor.execute(() -> {
             Song localSong = AppLocalDb.db.songDao().getOneById(songId);
             if (localSong != null) {
@@ -293,7 +294,7 @@ public class Model {
         return mixtapeItemLiveData;
     }
 
-    public void getMixtapeItem(String mixtapeId, GetMixtapeItem listener) {
+    public void getMixtapeItem(String mixtapeId, MixtapeItemProcess listener) {
         executor.execute(() -> {
             Mixtape localMixtape = AppLocalDb.db.mixtapeDao().getOneById(mixtapeId);
             if (localMixtape != null) {
@@ -307,15 +308,15 @@ public class Model {
         });
     }
 
-    public void getSong(String songId, GetSong listener) {
+    public void getSong(String songId, SongProcess listener) {
         modelFirebase.getSongById(songId, listener);
     }
 
-    public void getMixtape(String mixtapeId, GetMixtape listener) {
+    public void getMixtape(String mixtapeId, MixtapeProcess listener) {
         modelFirebase.getMixtapeById(mixtapeId, listener);
     }
 
-    public void getUser(String userId, GetUser listener) {
+    public void getUser(String userId, UserProcess listener) {
         //Fetch user objects from local db
         executor.execute(() -> {
             User localUser = AppLocalDb.db.userDao().getOneById(userId);
@@ -327,14 +328,14 @@ public class Model {
 
     //_________ Object Creation _________
     //Add Song with no image and existing mixtape
-    public void addSong(Song song, GetSong listener) {
+    public void addSong(Song song, SongProcess listener) {
         modelFirebase.addSong(song, dbSong -> {
             saveSong(dbSong, listener);
         });
     }
 
     //Add Song with no image and new mixtape
-    public void addSong(Song song, Mixtape mixtape, GetSong listener) {
+    public void addSong(Song song, Mixtape mixtape, SongProcess listener) {
         Model.instance.addMixtape(mixtape, dbMixtape -> {
             song.setMixtapeId(dbMixtape.getMixtapeId());
 
@@ -345,7 +346,7 @@ public class Model {
     }
 
     //Add Song with image and existing mixtape
-    public void addSong(Song song, Bitmap imageBitmap, GetSong listener) {
+    public void addSong(Song song, Bitmap imageBitmap, SongProcess listener) {
         modelFirebase.addSong(song, dbSong -> {
 
             Model.instance.uploadSongImage(imageBitmap, dbSong, dbSongWithImage -> {
@@ -355,7 +356,7 @@ public class Model {
     }
 
     //Add Song with image and new mixtape
-    public void addSong(Song song, Mixtape mixtape, Bitmap imageBitmap, GetSong listener) {
+    public void addSong(Song song, Mixtape mixtape, Bitmap imageBitmap, SongProcess listener) {
         Model.instance.addMixtape(mixtape, dbMixtape -> {
             song.setMixtapeId(dbMixtape.getMixtapeId());
 
@@ -368,7 +369,7 @@ public class Model {
         });
     }
 
-    public void addMixtape(Mixtape mixtape, GetMixtape listener) {
+    public void addMixtape(Mixtape mixtape, MixtapeProcess listener) {
         modelFirebase.addMixtape(mixtape, dbMixtape -> {
             saveMixtape(dbMixtape, listener);
         });
@@ -376,14 +377,14 @@ public class Model {
 
     //_________ Object Updating _________
     //Update Song
-    public void updateSong(Song song, GetSong listener) {
+    public void updateSong(Song song, SongProcess listener) {
         modelFirebase.updateSong(song, () -> {
             saveSong(song, listener);
         });
     }
 
     //Update Song with new mixtape
-    public void updateSong(Song song, Mixtape mixtape, GetSong listener) {
+    public void updateSong(Song song, Mixtape mixtape, SongProcess listener) {
         Model.instance.addMixtape(mixtape, dbMixtape -> {
             song.setMixtapeId(dbMixtape.getMixtapeId());
 
@@ -394,14 +395,14 @@ public class Model {
     }
 
     //Update Song with new image
-    public void updateSong(Song song, Bitmap imageBitmap, GetSong listener) {
+    public void updateSong(Song song, Bitmap imageBitmap, SongProcess listener) {
         Model.instance.uploadSongImage(imageBitmap, song, dbSongWithImage -> {
             saveSong(dbSongWithImage, listener);
         });
     }
 
     //Update Song with new image and new mixtape
-    public void updateSong(Song song, Mixtape mixtape, Bitmap imageBitmap, GetSong listener) {
+    public void updateSong(Song song, Mixtape mixtape, Bitmap imageBitmap, SongProcess listener) {
         Model.instance.addMixtape(mixtape, dbMixtape -> {
             song.setMixtapeId(dbMixtape.getMixtapeId());
 
@@ -411,25 +412,17 @@ public class Model {
         });
     }
 
-    public void updateSongs(List<Song> songs, GetSong listener) {
-        for (Song song : songs) {
-            //Notify listener only on last item updating
-            if (songs.indexOf(song) == (songs.size() - 1)) {
-                modelFirebase.updateSong(song, () -> saveSong(song, listener));
-            } else {
-                modelFirebase.updateSong(song, () -> saveSong(song, s -> {
-                }));
-            }
-        }
+    public void updateSongs(List<Song> songs, BasicProcess listener) {
+        modelFirebase.updateSongs(songs, listener);
     }
 
-    public void updateMixtape(Mixtape mixtape, GetMixtape listener) {
+    public void updateMixtape(Mixtape mixtape, MixtapeProcess listener) {
         modelFirebase.updateMixtape(mixtape, () -> {
             saveMixtape(mixtape, listener);
         });
     }
 
-    public void updateUser(User user, UpdateUser listener) {
+    public void updateUser(User user, BasicProcess listener) {
         modelFirebase.updateUser(user, () -> {
             //Save user to local db
             executor.execute(() -> AppLocalDb.db.userDao().insertMultiple(user));
@@ -441,7 +434,7 @@ public class Model {
     }
 
     //_________ Object Deleting _________
-    public void deleteSong(Song song, UpdateSong listener) {
+    public void deleteSong(Song song, BasicProcess listener) {
         song.setDeleted(true);
         modelFirebase.updateSong(song, () -> {
             executor.execute(() -> AppLocalDb.db.songDao().delete(song));
@@ -452,7 +445,7 @@ public class Model {
         });
     }
 
-    public void deleteMixtape(Mixtape mixtape, UpdateMixtape listener) {
+    public void deleteMixtape(Mixtape mixtape, BasicProcess listener) {
         mixtape.setDeleted(true);
         modelFirebase.updateMixtape(mixtape, () -> {
             executor.execute(() -> AppLocalDb.db.mixtapeDao().delete(mixtape));
@@ -585,7 +578,7 @@ public class Model {
         return items;
     }
 
-    private void saveSong(Song song, GetSong listener) {
+    private void saveSong(Song song, SongProcess listener) {
         //Save song to local db
         executor.execute(() -> AppLocalDb.db.songDao().insertMultiple(song));
         //Refresh live data
@@ -594,7 +587,7 @@ public class Model {
         listener.onComplete(song);
     }
 
-    private void saveMixtape(Mixtape mixtape, GetMixtape listener) {
+    private void saveMixtape(Mixtape mixtape, MixtapeProcess listener) {
         //Save mixtape to local db
         executor.execute(() -> AppLocalDb.db.mixtapeDao().insertMultiple(mixtape));
         //Refresh live data
@@ -644,53 +637,48 @@ public class Model {
 //interface for each remote data fetching\pushing action
 
     //_________ Multiple Objects _________
-    public interface GetSongs {
+    public interface SongsProcess {
         void onComplete(List<Song> songs);
     }
 
-    public interface GetMixtapes {
+    public interface MixtapesProcess {
         void onComplete(List<Mixtape> mixtapes);
     }
 
-    public interface GetMixtapeItems {
+    public interface MixtapeItemsProcess {
         void onComplete(List<MixtapeItem> mixtapeItems);
     }
 
-    public interface GetUsers {
+    public interface UsersProcess {
         void onComplete(List<User> users);
     }
 
     //_________ Single Object _________
-    public interface GetSong {
+    public interface SongProcess {
         void onComplete(Song song);
     }
 
-    public interface GetSongItem {
+    public interface SongItemProcess {
         void onComplete(SongItem songItem);
     }
 
-    public interface GetMixtape {
+    public interface MixtapeProcess {
         void onComplete(Mixtape mixtape);
     }
 
-    public interface GetMixtapeItem {
+    public interface MixtapeItemProcess {
         void onComplete(MixtapeItem mixtapeItem);
     }
 
-    public interface GetUser {
+    public interface UserProcess {
         void onComplete(User user);
     }
 
-    //_________ Object Creation _________
-    public interface AddSong {
-        void onComplete(Song song);
-    }
-
-    public interface AddMixtape {
-        void onComplete(Mixtape mixtape);
-    }
-
     //_________ Other_________
+    public interface BasicProcess {
+        void onComplete();
+    }
+
     public interface SaveImageListener {
         void onComplete(String url);
     }
@@ -703,20 +691,4 @@ public class Model {
         void onComplete(User user);
     }
 
-    public interface UserProcess {
-        void onComplete(User user);
-    }
-
-    //_________ Object Updating _________
-    public interface UpdateSong {
-        void onComplete();
-    }
-
-    public interface UpdateMixtape {
-        void onComplete();
-    }
-
-    public interface UpdateUser {
-        void onComplete();
-    }
 }

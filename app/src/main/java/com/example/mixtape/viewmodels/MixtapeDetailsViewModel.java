@@ -15,6 +15,7 @@ import java.util.List;
 
 public class MixtapeDetailsViewModel extends ViewModel {
     private String mixtapeId = "";
+
     private MutableLiveData<MixtapeItem> mixtapeItem = new MutableLiveData<>();
     private Mixtape mixtape = new Mixtape();
     private List<Song> songs = new LinkedList<>();
@@ -31,7 +32,7 @@ public class MixtapeDetailsViewModel extends ViewModel {
     public MixtapeDetailsViewModel(String mixtapeId) {
         this.mixtapeId = mixtapeId;
 
-        songsLoadingState.setValue(SongsState.loading);
+        //Setup observer that will be triggered on refresh
         mixtapeItem.observeForever(mixtapeItem -> {
             mixtape = mixtapeItem.getMixtape();
             songs = mixtapeItem.getSongs();
@@ -46,7 +47,6 @@ public class MixtapeDetailsViewModel extends ViewModel {
 
     public void refresh() {
         songsLoadingState.setValue(SongsState.loading);
-
         Model.instance.getMixtapeItem(mixtapeId, dbMixtapeItem -> {
             mixtapeItem.postValue(dbMixtapeItem);
         });

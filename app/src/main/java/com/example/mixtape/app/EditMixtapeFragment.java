@@ -30,6 +30,7 @@ import com.example.mixtape.viewmodels.EditMixtapeViewModel;
 import com.example.mixtape.viewmodels.EditMixtapeViewModelFactory;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class EditMixtapeFragment extends Fragment {
     Button mixtape_submit_btn;
     ProgressBar progressBar;
     String inputName, inputDescription, currentUserId;
-    List<Song> inputChosenSongs = new LinkedList<>();
+    List<Song> inputChosenSongs = new ArrayList<>();
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -53,7 +54,7 @@ public class EditMixtapeFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_add_edit_mixtape, container, false);
         //Edit page view
@@ -68,43 +69,45 @@ public class EditMixtapeFragment extends Fragment {
         songsList = view.findViewById(R.id.mixtape_add_edit_songs_rv);
         mixtape_add_edit_songs_empty_tv = view.findViewById(R.id.mixtape_add_edit_songs_empty_tv);
 
-        //Setup alert dialog
-        alert = new MaterialAlertDialogBuilder(this.getContext());
-        alert.setTitle("Input Error");
+        //Setup buttons listeners
+        mixtape_submit_btn.setOnClickListener(v -> validateAndSave());
 
-        //Observe user's mixtapes live data
-        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
+        //Observe this mixtape item live data
+        viewModel.getMixtapeItem().observe(getViewLifecycleOwner(), mixtapeItems -> {
             //Bind mixtape's data
             mixtape_name_et.setText(viewModel.getMixtape().getName());
             mixtape_description_et.setText(viewModel.getMixtape().getDescription());
 
-            //Setup submit button
+            //Initial selected songs input
+            //inputChosenSongs = new ArrayList<>(viewModel.getSongs());
+
+            //Enable clickables
             mixtape_submit_btn.setEnabled(true);
-            mixtape_submit_btn.setOnClickListener(v -> validateAndSave());
         });
 
+        //Setup mixtape's song list with multiple selection option
+        songsList.setHasFixedSize(true);
+        songsList.setLayoutManager(new LinearLayoutManager(MyApplication.getContext()));
+        adapter = new ListAdapter();
+        adapter.setOnItemClickListener((v, position, isChecked) -> {
+            Song clicked = viewModel.getUserSongs().get(position);
+            if (isChecked)
+                inputChosenSongs.add(clicked);
+            else
+                inputChosenSongs.remove(clicked);
+        });
+        adapter.setOnClickEnabled(false);
+
         //Observe user's songs live data
-        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> {
-            //Initial selected songs input
-            inputChosenSongs = viewModel.getMixtapeSongs();
+        viewModel.getUserSongItems().observe(getViewLifecycleOwner(), songItems -> {
+            songsList.setAdapter(adapter);
 
             //Treat an empty list
             if (songItems.isEmpty())
                 mixtape_add_edit_songs_empty_tv.setVisibility(View.VISIBLE);
 
-            //Setup mixtape's song list with multiple selection option
-            songsList.setHasFixedSize(true);
-            songsList.setLayoutManager(new LinearLayoutManager(MyApplication.getContext()));
-            adapter = new ListAdapter();
-            songsList.setAdapter(adapter);
-
-            adapter.setOnItemClickListener((v, position, isChecked) -> {
-                Song clicked = viewModel.getUserSongs().get(position);
-                if (isChecked)
-                    inputChosenSongs.add(clicked);
-                else
-                    inputChosenSongs.remove(clicked);
-            });
+            //Enable clickables
+            adapter.setOnClickEnabled(true);
         });
 
         return view;
@@ -114,6 +117,10 @@ public class EditMixtapeFragment extends Fragment {
         inputName = mixtape_name_et.getText().toString();
         inputDescription = mixtape_description_et.getText().toString();
         currentUserId = viewModel.getCurrentUser().getUserId();
+
+        //Setup alert dialog
+        alert = new MaterialAlertDialogBuilder(this.getContext());
+        alert.setTitle("Input Error");
 
         //Validate Input
         if (inputName.isEmpty())
@@ -128,18 +135,18 @@ public class EditMixtapeFragment extends Fragment {
     private void saveToDb() {
         progressBar.setVisibility(View.VISIBLE);
         mixtape_submit_btn.setEnabled(false);
-        adapter.setEnabled(false);
+        adapter.setOnClickEnabled(false);
 
         Mixtape mixtape = viewModel.getMixtape();
         mixtape.setName(inputName);
         mixtape.setDescription(inputDescription);
 
         Model.instance.updateMixtape(mixtape, dbMixtape -> {
-            if (inputChosenSongs.isEmpty() || inputChosenSongs.equals(viewModel.getMixtapeSongs()))
+            if (inputChosenSongs.isEmpty() || inputChosenSongs.equals(viewModel.getSongs()))
                 back();
             else {
                 inputChosenSongs.forEach(s -> s.setMixtapeId(mixtape.getMixtapeId()));
-                Model.instance.updateSongs(inputChosenSongs, lastSong -> back());
+                Model.instance.updateSongs(inputChosenSongs, () -> back());
             }
         });
     }
@@ -148,15 +155,13 @@ public class EditMixtapeFragment extends Fragment {
         Navigation.findNavController(mixtape_name_et).navigateUp();
     }
 
-
-    //______________________ List Listeners Interface ______________________________________
-    //Interface wrapper for a list item listeners
+    //______________________ Recycler View Adapter Setup _____________________________
+    //List Listeners Interface
     interface OnItemClickListener {
         void onItemClick(View v, int position, boolean isChecked);
     }
 
-    //______________________ Recycler View Holder Class _____________________________
-    //Holds song's row view items and links them to the view resources
+    //Recycler View Holder Class
     class RowHolder extends RecyclerView.ViewHolder {
         TextView mixtaperow_song_tv;
         CheckBox mixtaperow_song_checkable_cb;
@@ -181,14 +186,13 @@ public class EditMixtapeFragment extends Fragment {
         @SuppressLint("SetTextI18n")
         void bind(Song song) {
             //Treat an existing song of this mixtape
-            if (viewModel.getMixtapeSongs().contains(song)) {
-                //TODO?: if song removed add to default mixtape instead
+            if (viewModel.mixtapeContainsSong(song.getSongId())) {
+                //Set state and checkbox view
                 //Set it unclickable so it wont remain without containing mixtape
                 this.itemView.setClickable(false);
-                mixtaperow_song_checkable_cb.setEnabled(false);
-                //Set state and checkbox view
                 this.isChecked = true;
-                mixtaperow_song_checkable_cb.setChecked(true);
+                mixtaperow_song_checkable_cb.setEnabled(false);
+                mixtaperow_song_checkable_cb.setVisibility(View.INVISIBLE);
             }
             //Bind rest of the data
             String name = song.getName();
@@ -200,20 +204,24 @@ public class EditMixtapeFragment extends Fragment {
         }
     }
 
-    //______________________ Recycler View Adapter Class _____________________________
+    //Recycler View Adapter Class
     //List adapter holding also the row listeners
     class ListAdapter extends RecyclerView.Adapter<RowHolder> {
 
         OnItemClickListener listener;
+        OnItemClickListener listenerCopy;
 
         //Row listeners setters
         public void setOnItemClickListener(OnItemClickListener listener) {
             this.listener = listener;
+            this.listenerCopy = listener;
         }
 
         //Option to cancel on click listener
-        public void setEnabled(boolean enabled) {
-            if (!enabled)
+        public void setOnClickEnabled(boolean enabled) {
+            if (enabled)
+                this.listener = listenerCopy;
+            else
                 this.listener = null;
         }
 
@@ -230,6 +238,7 @@ public class EditMixtapeFragment extends Fragment {
         //Settings for when binding the view items and view resources
         public void onBindViewHolder(@NonNull RowHolder holder, int position) {
             Song song = viewModel.getUserSongs().get(position);
+
             holder.bind(song);
         }
 

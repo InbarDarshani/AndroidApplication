@@ -103,16 +103,6 @@
             </androidx.appcompat.widget.LinearLayoutCompat>
         </com.google.android.material.card.MaterialCardView>
 
-
-
-
-
-
-
-
-
-
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/mixtape_submit_btn"
             style="@style/Widget.Material3.Button"

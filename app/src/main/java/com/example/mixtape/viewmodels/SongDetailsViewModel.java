@@ -21,6 +21,7 @@ public class SongDetailsViewModel extends ViewModel {
     public SongDetailsViewModel(String songId) {
         this.songId = songId;
 
+        //Setup observer that will be triggered on refresh
         songItem.observeForever(songItem -> {
             song = songItem.getSong();
             mixtape = songItem.getMixtape();

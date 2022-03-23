@@ -62,7 +62,6 @@ public class UserFragment extends Fragment {
         viewModel = new ViewModelProvider(this, new UserViewModelFactory(userId)).get(UserViewModel.class);
     }
 
-    @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment
@@ -126,7 +125,7 @@ public class UserFragment extends Fragment {
         });
 
         //Setup profile if its current user's
-        currentUserProfile();
+        currentUserSetup();
 
         return view;
     }
@@ -137,7 +136,7 @@ public class UserFragment extends Fragment {
         viewModel.refresh();
     }
 
-    private void currentUserProfile() {
+    private void currentUserSetup() {
         String currentUserId = MyApplication.getContext().getSharedPreferences("USER", Context.MODE_PRIVATE).getString("userId", "");
 
         //Check if its the profile of current user
@@ -187,76 +186,9 @@ public class UserFragment extends Fragment {
             profile_cancel_name_btn.setVisibility(View.GONE);
             profile_save_name_btn.setVisibility(View.GONE);
         });
-
     }
 
-    //______________________ List Listeners Interface ______________________________________
-    //Interface wrapper for a list item listeners
-    interface OnItemClickListener {
-        void onItemClick(View v, int position);
-    }
-
-    //______________________ Recycler View Holder Class _____________________________
-    //Holds song's row view items and links them to the view resources
-    class RowHolder extends RecyclerView.ViewHolder {
-        TextView profilerow_mixtape_name_tv;
-        TextView profilerow_mixtape_description_tv;
-
-        public RowHolder(@NonNull View itemView, OnItemClickListener listener) {
-            super(itemView);
-
-            //Set row view resources
-            profilerow_mixtape_name_tv = itemView.findViewById(R.id.profilerow_mixtape_name_tv);
-            profilerow_mixtape_description_tv = itemView.findViewById(R.id.profilerow_mixtape_description_tv);
-
-            //Sets row listeners
-            itemView.setOnClickListener(v -> {
-                listener.onItemClick(v, getAdapterPosition());
-            });
-        }
-
-        void bind(@NonNull MixtapeItem mixtapeItem) {
-            //Bind Mixtape data of this song post
-            profilerow_mixtape_name_tv.setText(mixtapeItem.mixtape.getName());
-            profilerow_mixtape_description_tv.setText(mixtapeItem.mixtape.getDescription());
-        }
-    }
-
-    //______________________ Recycler View Adapter Class _____________________________
-    //List adapter holding also the row listeners
-    class ListAdapter extends RecyclerView.Adapter<RowHolder> {
-
-        OnItemClickListener listener;
-
-        //Row listeners setters
-        public void setOnItemClickListener(OnItemClickListener listener) {
-            this.listener = listener;
-        }
-
-        @NonNull
-        @Override
-        //Settings for when creating the row view holder
-        //Creates the row view from the row view resource and creates a view holder for it
-        public RowHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = getLayoutInflater().inflate(R.layout.list_profile_row, parent, false);
-            return new RowHolder(view, listener);
-        }
-
-        @Override
-        //Settings for when binding the view items and view resources
-        public void onBindViewHolder(@NonNull RowHolder holder, int position) {
-            MixtapeItem mixtapeItem = viewModel.getMixtapeItems().getValue().get(position);
-            holder.bind(mixtapeItem);
-        }
-
-        @Override
-        public int getItemCount() {
-            if (viewModel.getMixtapeItems().getValue() == null)
-                return 0;
-            return viewModel.getMixtapeItems().getValue().size();
-        }
-    }
-
+    //______________________ Camera and Gallery Setup _____________________________
     //Activity launcher for result
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -306,6 +238,72 @@ public class UserFragment extends Fragment {
     private void openCam() {
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         activityResultLauncher.launch(cameraIntent);
+    }
+
+    //______________________ Recycler View Adapter Setup _____________________________
+    //List Listeners Interface
+    interface OnItemClickListener {
+        void onItemClick(View v, int position);
+    }
+
+    //Recycler View Holder Class
+    class RowHolder extends RecyclerView.ViewHolder {
+        TextView profilerow_mixtape_name_tv;
+        TextView profilerow_mixtape_description_tv;
+
+        public RowHolder(@NonNull View itemView, OnItemClickListener listener) {
+            super(itemView);
+
+            //Set row view resources
+            profilerow_mixtape_name_tv = itemView.findViewById(R.id.profilerow_mixtape_name_tv);
+            profilerow_mixtape_description_tv = itemView.findViewById(R.id.profilerow_mixtape_description_tv);
+
+            //Sets row listeners
+            itemView.setOnClickListener(v -> {
+                listener.onItemClick(v, getAdapterPosition());
+            });
+        }
+
+        void bind(@NonNull MixtapeItem mixtapeItem) {
+            //Bind Mixtape data of this song post
+            profilerow_mixtape_name_tv.setText(mixtapeItem.mixtape.getName());
+            profilerow_mixtape_description_tv.setText(mixtapeItem.mixtape.getDescription());
+        }
+    }
+
+    //Recycler View Adapter Class
+    //List adapter holding also the row listeners
+    class ListAdapter extends RecyclerView.Adapter<RowHolder> {
+
+        OnItemClickListener listener;
+
+        //Row listeners setters
+        public void setOnItemClickListener(OnItemClickListener listener) {
+            this.listener = listener;
+        }
+
+        @NonNull
+        @Override
+        //Settings for when creating the row view holder
+        //Creates the row view from the row view resource and creates a view holder for it
+        public RowHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = getLayoutInflater().inflate(R.layout.list_profile_row, parent, false);
+            return new RowHolder(view, listener);
+        }
+
+        @Override
+        //Settings for when binding the view items and view resources
+        public void onBindViewHolder(@NonNull RowHolder holder, int position) {
+            MixtapeItem mixtapeItem = viewModel.getMixtapeItems().getValue().get(position);
+            holder.bind(mixtapeItem);
+        }
+
+        @Override
+        public int getItemCount() {
+            if (viewModel.getMixtapeItems().getValue() == null)
+                return 0;
+            return viewModel.getMixtapeItems().getValue().size();
+        }
     }
 
 }

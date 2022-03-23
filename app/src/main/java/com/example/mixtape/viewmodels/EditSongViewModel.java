@@ -17,17 +17,19 @@ public class EditSongViewModel extends ViewModel {
     private LiveData<SongItem> songItem;
     private Song song = new Song();
     private Mixtape mixtape = new Mixtape();
+
     private User currentUser;
-    private LiveData<List<MixtapeItem>> mixtapeItems;
+    private LiveData<List<MixtapeItem>> userMixtapeItems;
 
     public EditSongViewModel(String songId) {
-        currentUser = Model.instance.getCurrentUser();
         songItem = Model.instance.getSongItem(songId);
         songItem.observeForever(songItem -> {
             song = songItem.getSong();
             mixtape = songItem.getMixtape();
         });
-        mixtapeItems = Model.instance.getUserMixtapeItems(currentUser.getUserId());
+
+        currentUser = Model.instance.getCurrentUser();
+        userMixtapeItems = Model.instance.getUserMixtapeItems(currentUser.getUserId());
     }
 
     public LiveData<SongItem> getSongItem() {
@@ -46,18 +48,23 @@ public class EditSongViewModel extends ViewModel {
         return currentUser;
     }
 
-    public LiveData<List<MixtapeItem>> getMixtapeItems() {
-        return mixtapeItems;
+    public LiveData<List<MixtapeItem>> getUserMixtapeItems() {
+        return userMixtapeItems;
     }
 
-    public List<Mixtape> getMixtapes() {
-        return mixtapeItems.getValue().stream().map(MixtapeItem::getMixtape).collect(Collectors.toList());
+    public List<Mixtape> getUserMixtapes() {
+        return userMixtapeItems.getValue().stream().map(MixtapeItem::getMixtape).collect(Collectors.toList());
     }
 
     public String[] getMixtapesOptions() {
-        if (mixtapeItems.getValue() == null)
+        if (userMixtapeItems.getValue() == null)
             return new String[0];
-        return mixtapeItems.getValue().stream().map(m -> m.getMixtape().getName()).toArray(String[]::new);
+        return userMixtapeItems.getValue().stream().map(m -> m.getMixtape().getName()).toArray(String[]::new);
+    }
+
+    public boolean existingMixtapeName(String mixtapeName) {
+        return (userMixtapeItems.getValue().stream().map(MixtapeItem::getMixtape)
+                .anyMatch(m -> (m.getName().equals(mixtapeName))));
     }
 
 }

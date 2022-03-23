@@ -66,9 +66,8 @@ public class AddSongFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(AddSongViewModel.class);
     }
 
-    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         //Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_add_edit_song, container, false);
 
@@ -90,40 +89,110 @@ public class AddSongFragment extends Fragment {
         song_cam_btn.setOnClickListener(v -> openCam());
         song_gallery_btn.setOnClickListener(v -> openGallery());
 
-        //Setup alert dialog
-        alert = new MaterialAlertDialogBuilder(this.getContext());
-        alert.setTitle("Input Error");
-
         //Setup user's mixtapes list
         adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line);
         song_mixtape_name_actv.setOnDismissListener(() -> { //onDismiss fires anytime the dropdown disappears by choosing an item or by dismissing it or by typing not found item
             //Get autocomplete text input
             inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
+
             //If the text is one of the mixtape options
-            if (Arrays.stream(viewModel.getMixtapesOptions()).anyMatch(s -> s.equals(inputNewMixtapeName))) {
-                int position = adapter.getPosition(inputNewMixtapeName);
-                inputChosenMixtape = viewModel.getMixtapes().get(position);
+            if (viewModel.existingMixtapeName(inputNewMixtapeName))
                 song_mixtape_description_til.setVisibility(View.GONE);
-            }
-            //If the text is not one of the mixtape options
-            else {
-                inputChosenMixtape = null;
+            else //If the text is not one of the mixtape options
                 song_mixtape_description_til.setVisibility(View.VISIBLE);
-            }
         });
 
         //Observe user's mixtapes live data
-        viewModel.getMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
+        viewModel.getUserMixtapeItems().observe(getViewLifecycleOwner(), mixtapeItems -> {
             //Setup dropdown list with user's mixtapes
             adapter.clear();
             adapter.addAll(viewModel.getMixtapesOptions());
             song_mixtape_name_actv.setAdapter(adapter);
+
+            //Enable clickables
+            song_submit_btn.setEnabled(true);
+            song_cam_btn.setEnabled(true);
+            song_gallery_btn.setEnabled(true);
             song_mixtape_name_actv.setEnabled(true);
+            if (mixtapeItems.isEmpty())
+                song_mixtape_name_til.setEnabled(false);
+            else
+                song_mixtape_name_til.setEnabled(true);
         });
 
         return view;
     }
 
+    private void validateAndSave() {
+        //Get user's inputs
+        inputSongName = song_name_et.getText().toString();
+        inputArtist = song_artist_et.getText().toString();
+        inputCaption = song_caption_et.getText().toString();
+        inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
+        inputNewMixtapeDescription = song_mixtape_description_til.getEditText().getText().toString();
+        currentUserId = viewModel.getCurrentUser().getUserId();
+
+        //If the mixtape text is one of the mixtape options
+        if (viewModel.existingMixtapeName(inputNewMixtapeName)) {
+            int position = adapter.getPosition(inputNewMixtapeName);
+            inputChosenMixtape = viewModel.getUserMixtapes().get(position);
+        }
+
+        //Setup alert dialog
+        alert = new MaterialAlertDialogBuilder(this.getContext());
+        alert.setTitle("Input Error");
+
+        //Validate Input
+        if (inputSongName.isEmpty())
+            alert.setMessage("Please enter song's name").show();
+        else if (inputNewMixtapeName.isEmpty() || inputChosenMixtape == null)
+            alert.setMessage("Please choose or create mixtape").show();
+        else
+            saveToDb();
+    }
+
+    private void saveToDb() {
+        progressBar.setVisibility(View.VISIBLE);
+        song_submit_btn.setEnabled(false);
+        song_cam_btn.setEnabled(false);
+        song_gallery_btn.setEnabled(false);
+        song_mixtape_name_actv.setEnabled(false);
+        song_mixtape_name_til.setEnabled(false);
+
+        Song song = new Song(inputSongName, inputArtist, inputCaption, currentUserId);
+        boolean newMixtape = !viewModel.existingMixtapeName(inputNewMixtapeName);
+
+        //Add Song with image and new mixtape
+        if (inputImage != null && newMixtape) {
+            Model.instance.addSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> toSongDetails(dbSong.getSongId()));
+        }
+        //Add Song with image and existing mixtape
+        if (inputImage != null && !newMixtape) {
+            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
+            Model.instance.addSong(song, inputImage, dbSong -> toSongDetails(dbSong.getSongId()));
+        }
+        //Add Song with no image and new mixtape
+        if (inputImage == null && newMixtape) {
+            Model.instance.addSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> toSongDetails(dbSong.getSongId()));
+        }
+        //Add Song with no image and existing mixtape
+        if (inputImage == null && !newMixtape) {
+            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
+            Model.instance.addSong(song, dbSong -> toSongDetails(dbSong.getSongId()));
+        }
+    }
+
+    private void toSongDetails(String songId) {
+        //Remove this fragment from back stack and navigate to the created song details
+        FragmentManager manager = getParentFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        transaction.remove(this);
+        transaction.commit();
+        manager.popBackStack();
+        Navigation.findNavController(song_name_et).navigate(NavGraphDirections.actionGlobalSongDetailsFragment(songId));
+    }
+
+    //______________________ Camera and Gallery Setup _____________________________
     //Activity launcher for result
     ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -171,59 +240,4 @@ public class AddSongFragment extends Fragment {
         activityResultLauncher.launch(cameraIntent);
     }
 
-    private void validateAndSave() {
-        inputSongName = song_name_et.getText().toString();
-        inputArtist = song_artist_et.getText().toString();
-        inputCaption = song_caption_et.getText().toString();
-        inputNewMixtapeName = song_mixtape_name_actv.getText().toString();
-        inputNewMixtapeDescription = song_mixtape_description_til.getEditText().getText().toString();
-        currentUserId = viewModel.getCurrentUser().getUserId();
-
-        //Validate Input
-        if (inputSongName.isEmpty())
-            alert.setMessage("Please enter song's name").show();
-        else if (inputNewMixtapeName.isEmpty())
-            alert.setMessage("Please choose or create mixtape").show();
-        else
-            saveToDb();
-    }
-
-    private void saveToDb() {
-        progressBar.setVisibility(View.VISIBLE);
-        song_submit_btn.setEnabled(false);
-        song_cam_btn.setEnabled(false);
-        song_gallery_btn.setEnabled(false);
-        song_mixtape_name_actv.setEnabled(false);
-
-        Song song = new Song(inputSongName, inputArtist, inputCaption, currentUserId);
-
-        //Add Song with image and new mixtape
-        if (inputImage != null && inputChosenMixtape == null) {
-            Model.instance.addSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> toSongDetails(dbSong.getSongId()));
-        }
-        //Add Song with image and existing mixtape
-        if (inputImage != null && inputChosenMixtape != null) {
-            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.addSong(song, inputImage, dbSong -> toSongDetails(dbSong.getSongId()));
-        }
-        //Add Song with no image and new mixtape
-        if (inputImage == null && inputChosenMixtape == null) {
-            Model.instance.addSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> toSongDetails(dbSong.getSongId()));
-        }
-        //Add Song with no image and existing mixtape
-        if (inputImage == null && inputChosenMixtape != null) {
-            song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.addSong(song, dbSong -> toSongDetails(dbSong.getSongId()));
-        }
-    }
-
-    private void toSongDetails(String songId) {
-        //Remove this fragment from back stack and navigate to the created song details
-        FragmentManager manager = getParentFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        transaction.remove(this);
-        transaction.commit();
-        manager.popBackStack();
-        Navigation.findNavController(song_name_et).navigate(NavGraphDirections.actionGlobalSongDetailsFragment(songId));
-    }
 }

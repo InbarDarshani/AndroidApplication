@@ -47,7 +47,7 @@ public class FeedFragment extends Fragment {
         //Get views
         feed_empty_tv = view.findViewById(R.id.feed_empty_tv);
 
-        //Setup refresh view, attach OnRefresh function, set refreshing state according to Model's loading state
+        //Setup refresh view, attach OnRefresh function, set refreshing state according to loading state
         swipeRefresh = view.findViewById(R.id.feed_swiperefresh);
         swipeRefresh.setOnRefreshListener(Model.instance::refreshFeed);
         swipeRefresh.setRefreshing(Model.instance.getFeedLoadingState().getValue() == Model.FeedState.loading);
@@ -59,7 +59,7 @@ public class FeedFragment extends Fragment {
         adapter = new ListAdapter();
         list.setAdapter(adapter);
 
-        //Create the row items listener actions
+        //Create the row items on click listener
         adapter.setOnItemClickListener((v, position) -> {
             //get song item from view model
             String songId = viewModel.getSongItems().getValue().get(position).song.getSongId();
@@ -90,14 +90,13 @@ public class FeedFragment extends Fragment {
         return view;
     }
 
-    //______________________ List Listeners Interface ______________________________________
-    //Interface wrapper for a list item listeners
+    //______________________ Recycler View Adapter Setup _____________________________
+    //List Listeners Interface
     interface OnItemClickListener {
         void onItemClick(View v, int position);
     }
 
-    //______________________ Recycler View Holder Class _____________________________
-    //Holds song's row view items and links them to the view resources
+    //Recycler View Holder Class
     class RowHolder extends RecyclerView.ViewHolder {
         ImageView feedrow_profile_iv;
         TextView feedrow_user_tv;
@@ -145,7 +144,7 @@ public class FeedFragment extends Fragment {
         }
     }
 
-    //______________________ Recycler View Adapter Class _____________________________
+    //Recycler View Adapter Class
     //List adapter holding also the row listeners
     class ListAdapter extends RecyclerView.Adapter<RowHolder> {
 

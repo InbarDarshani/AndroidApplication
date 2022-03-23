@@ -38,8 +38,6 @@
                 android:layout_width="70dp"
                 android:layout_height="70dp"
                 android:layout_gravity="center|top"
-                android:clickable="true"
-                android:focusable="true"
                 app:srcCompat="@drawable/empty_user_image_colored"
                 tools:ignore="SpeakableTextPresentCheck" />
 
@@ -101,11 +99,10 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/song_mixtape_tv"
+                android:enabled="false"
                 style="@style/Widget.Mixtape.Chip.Large"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
                 android:text="Mixtape"
                 app:chipIcon="@drawable/icon_cassete" />
 
@@ -118,6 +115,7 @@
             android:layout_margin="20dp"
             android:visibility="invisible"
             app:fabSize="mini"
+            android:enabled="false"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayoutCompat2"
@@ -130,6 +128,7 @@
             android:layout_gravity="bottom|right"
             android:layout_margin="20dp"
             android:visibility="invisible"
+            android:enabled="false"
             app:fabSize="mini"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/song_edit"

@@ -50,7 +50,7 @@ public class LoginFragment extends Fragment {
         //Set LoginState Observer within this login activity lifecycle
         Model.instance.getUserLoginState().observe(getViewLifecycleOwner(), loginState -> {
             if (loginState == Model.LoginState.error)
-                alert.setMessage(Model.instance.dbError).show();
+                alert.setMessage(Model.instance.authError).show();
             if (loginState == Model.LoginState.signedin)
                 toFeedActivity();
         });
