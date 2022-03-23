@@ -136,7 +136,8 @@ public class MixtapeDetailsFragment extends Fragment {
             mixtape_delete.setVisibility(View.VISIBLE);
 
             mixtap_edit.setOnClickListener(v -> {
-                Navigation.findNavController(v).navigate(MixtapeDetailsFragmentDirections.actionMixtapeDetailsFragmentToEditMixtapeFragment(viewModel.getMixtape().getMixtapeId()));
+                Navigation.findNavController(v).navigate(
+                        MixtapeDetailsFragmentDirections.actionMixtapeDetailsFragmentToEditMixtapeFragment(viewModel.getMixtape().getMixtapeId()));
             });
 
             mixtape_delete.setOnClickListener(v -> {
@@ -172,8 +173,7 @@ public class MixtapeDetailsFragment extends Fragment {
 
             //Sets row listeners
             itemView.setOnClickListener(v -> {
-                int pos = getAdapterPosition();
-                listener.onItemClick(v, pos);
+                listener.onItemClick(v, getAdapterPosition());
             });
         }
 

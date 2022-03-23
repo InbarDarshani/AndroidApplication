@@ -160,17 +160,17 @@ public class Model {
         return feed;
     }
 
-    public MutableLiveData<List<MixtapeItem>> getUserProfile(String userId) {
+    public MutableLiveData<List<MixtapeItem>> getUserMixtapeItems(String userId) {
         MutableLiveData<List<MixtapeItem>> userMixtapeItems = new MutableLiveData<>();
 
         //First Get and post existing data from local db
-        executor.execute(() -> userMixtapeItems.postValue(constructProfileItems(userId)));
+        executor.execute(() -> userMixtapeItems.postValue(constructUserMixtapeItems(userId)));
 
         //Start loading
         profileLoadingState.postValue(ProfileState.loading);
         //Fetch all user's mixtapes from firebase db
-        modelFirebase.getProfileMixtapes(0L, userId, mixtapes -> {
-            Log.d("TAG", "Model - firebase returned " + mixtapes.size() + " mixtapes to profile");
+        modelFirebase.getUserMixtapes(0L, userId, mixtapes -> {
+            Log.d("TAG", "Model - firebase returned " + mixtapes.size() + " mixtapes of user");
 
             //If there are no mixtapes finish loading now
             if (mixtapes.isEmpty())
@@ -180,7 +180,7 @@ public class Model {
                 //Save mixtapes to local db
                 AppLocalDb.db.mixtapeDao().insertMany(mixtapes);
                 //Construct profile mixtape items objects from local db and post to live data
-                userMixtapeItems.postValue(constructProfileItems(userId));
+                userMixtapeItems.postValue(constructUserMixtapeItems(userId));
 
                 if (mixtapes.isEmpty()) {
                     profileLoadingState.postValue(ProfileState.empty);
@@ -191,12 +191,12 @@ public class Model {
         return userMixtapeItems;
     }
 
-    public void getUserProfile(String userId, GetMixtapeItems listener) {
+    public void getUserMixtapeItems(String userId, GetMixtapeItems listener) {
         //Start loading
         profileLoadingState.postValue(ProfileState.loading);
         //Get all user's mixtapes from local db
         executor.execute(() -> {
-            List<MixtapeItem> localMixtepItems = constructProfileItems(userId);
+            List<MixtapeItem> localMixtepItems = constructUserMixtapeItems(userId);
 
             if (localMixtepItems.isEmpty()) {
                 profileLoadingState.postValue(ProfileState.empty);
@@ -206,6 +206,26 @@ public class Model {
             listener.onComplete(localMixtepItems);
         });
 
+    }
+
+    public MutableLiveData<List<SongItem>> getUserSongItems(String userId) {
+        MutableLiveData<List<SongItem>> userSongItems = new MutableLiveData<>();
+
+        //First Get and post existing data from local db
+        executor.execute(() -> userSongItems.postValue(constructUserSongItems(userId)));
+
+        //Fetch all user's mixtapes from firebase db
+        modelFirebase.getUserSongs(0L, userId, songs -> {
+            Log.d("TAG", "Model - firebase returned " + songs.size() + " songs of user");
+
+            executor.execute(() -> {
+                //Save songs to local db
+                AppLocalDb.db.songDao().insertMany(songs);
+                //Construct user song items objects from local db and post to live data
+                userSongItems.postValue(constructUserSongItems(userId));
+            });
+        });
+        return userSongItems;
     }
 
     //_________ Multiple Objects Fetching _________
@@ -391,6 +411,18 @@ public class Model {
         });
     }
 
+    public void updateSongs(List<Song> songs, GetSong listener) {
+        for (Song song : songs) {
+            //Notify listener only on last item updating
+            if (songs.indexOf(song) == (songs.size() - 1)) {
+                modelFirebase.updateSong(song, () -> saveSong(song, listener));
+            } else {
+                modelFirebase.updateSong(song, () -> saveSong(song, s -> {
+                }));
+            }
+        }
+    }
+
     public void updateMixtape(Mixtape mixtape, GetMixtape listener) {
         modelFirebase.updateMixtape(mixtape, () -> {
             saveMixtape(mixtape, listener);
@@ -515,8 +547,8 @@ public class Model {
         return items;
     }
 
-    //Construct profile mixtape items objects from local db
-    private List<MixtapeItem> constructProfileItems(String userId) {
+    //Construct user mixtape items objects from local db
+    private List<MixtapeItem> constructUserMixtapeItems(String userId) {
         List<MixtapeItem> items = new LinkedList<>();
         List<Mixtape> mixtapes = AppLocalDb.db.mixtapeDao().getManyByUserId(userId);
         User user = AppLocalDb.db.userDao().getOneById(userId);
@@ -531,6 +563,25 @@ public class Model {
 
         //Sort by TimeModified
         items.sort((mi1, mi2) -> mi2.getMixtape().getTimeModified().compareTo(mi1.getMixtape().getTimeModified()));
+        return items;
+    }
+
+    //Construct user songs items objects from local db
+    private List<SongItem> constructUserSongItems(String userId) {
+        List<SongItem> items = new LinkedList<>();
+        List<Song> songs = AppLocalDb.db.songDao().getManyByUserId(userId);
+        User user = AppLocalDb.db.userDao().getOneById(userId);
+
+        for (Song song : songs) {
+            if (!song.isDeleted()) {
+                Mixtape mixtape = AppLocalDb.db.mixtapeDao().getOneById(song.getMixtapeId());
+                SongItem songItem = new SongItem(song, mixtape, user);
+                items.add(songItem);
+            }
+        }
+
+        //Sort by TimeModified
+        items.sort((si1, si2) -> si2.getSong().getTimeModified().compareTo(si1.getSong().getTimeModified()));
         return items;
     }
 

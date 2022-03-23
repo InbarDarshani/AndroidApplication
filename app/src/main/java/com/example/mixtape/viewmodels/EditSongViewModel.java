@@ -27,7 +27,7 @@ public class EditSongViewModel extends ViewModel {
             song = songItem.getSong();
             mixtape = songItem.getMixtape();
         });
-        mixtapeItems = Model.instance.getUserProfile(currentUser.getUserId());
+        mixtapeItems = Model.instance.getUserMixtapeItems(currentUser.getUserId());
     }
 
     public LiveData<SongItem> getSongItem() {

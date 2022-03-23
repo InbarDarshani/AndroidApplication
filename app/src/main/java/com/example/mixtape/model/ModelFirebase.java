@@ -156,7 +156,7 @@ public class ModelFirebase {
                 .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get feed songs " + e.getMessage()));
     }
 
-    public void getProfileMixtapes(Long lastUpdate, String userId, Model.GetMixtapes listener) {
+    public void getUserMixtapes(Long lastUpdate, String userId, Model.GetMixtapes listener) {
         db.collection(Mixtape.COLLECTION_NAME)
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("deleted", false)
@@ -173,7 +173,27 @@ public class ModelFirebase {
                     }
                     listener.onComplete(mixtapes);
                 })
-                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get profile mixtapes " + "\n\t" + e.getMessage()));
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user mixtapes " + "\n\t" + e.getMessage()));
+    }
+
+    public void getUserSongs(Long lastUpdate, String userId, Model.GetSongs listener) {
+        db.collection(Song.COLLECTION_NAME)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("deleted", false)
+                .whereGreaterThanOrEqualTo("timeModified", new Timestamp(lastUpdate, 0))
+                .get()
+                .addOnCompleteListener(task -> {
+                    List<Song> songs = new LinkedList<>();
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            Song song = Song.create(documentSnapshot.getData());
+                            song.setSongId(documentSnapshot.getId());
+                            songs.add(song);
+                        }
+                    }
+                    listener.onComplete(songs);
+                })
+                .addOnFailureListener(e -> Log.d("TAG", "Firebase - failed to get user songs " + "\n\t" + e.getMessage()));
     }
 
     public void getFeedDeletedSongs(Long lastUpdate, Model.GetSongs listener) {

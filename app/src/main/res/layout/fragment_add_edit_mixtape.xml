@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?><!--TOREMOVE? AddMixtapeFragment-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -16,7 +16,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/mixtape_progressbar"
+            style="@style/Widget.Material3.CircularProgressIndicator.Medium"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="10dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
         <TextView
+            android:id="@+id/mixtape_add_edit_page_title_tv"
             style="@style/TextAppearance.Material3.HeadlineSmall"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -34,6 +45,7 @@
             app:startIconDrawable="@drawable/icon_cassete">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/mixtape_name_et"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -46,39 +58,69 @@
             app:startIconDrawable="@drawable/icon_caption">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/mixtape_description_et"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="Songs"
-            app:startIconDrawable="@drawable/icon_note">
+            android:text="Choose songs to move and add to this mixtape" />
 
-            <AutoCompleteTextView
+        <!--Songs list-->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="5dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="Songs" />
+
+                <TextView
+                    android:id="@+id/mixtape_add_edit_songs_empty_tv"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="10dp"
+                    android:text="No songs created yet"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/mixtape_add_edit_songs_rv"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </androidx.appcompat.widget.LinearLayoutCompat>
+        </com.google.android.material.card.MaterialCardView>
+
+
+
+
+
+
+
+
+
+
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/mixtape_submit_btn"
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:enabled="false"
             android:text="Create" />
-
-        <com.google.android.material.progressindicator.CircularProgressIndicator
-            style="@style/Widget.Material3.CircularProgressIndicator.Medium"
-            android:id="@+id/add_mixtape_progressbar"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_gravity="center"
-            android:layout_marginTop="10dp"
-            android:indeterminate="true" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 </ScrollView>

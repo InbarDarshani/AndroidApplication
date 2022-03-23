@@ -19,22 +19,25 @@ public class MixtapeDetailsViewModel extends ViewModel {
     private Mixtape mixtape = new Mixtape();
     private List<Song> songs = new LinkedList<>();
     private User user = new User();
+
     public enum SongsState {
         loading,
         empty,
         loaded
     }
+
     public MutableLiveData<SongsState> songsLoadingState = new MutableLiveData<>();
 
     public MixtapeDetailsViewModel(String mixtapeId) {
         this.mixtapeId = mixtapeId;
 
+        songsLoadingState.setValue(SongsState.loading);
         mixtapeItem.observeForever(mixtapeItem -> {
             mixtape = mixtapeItem.getMixtape();
             songs = mixtapeItem.getSongs();
             user = mixtapeItem.getUser();
 
-            if(songs.isEmpty())
+            if (songs.isEmpty())
                 songsLoadingState.setValue(SongsState.empty);
             else
                 songsLoadingState.setValue(SongsState.loaded);
@@ -42,7 +45,11 @@ public class MixtapeDetailsViewModel extends ViewModel {
     }
 
     public void refresh() {
-        Model.instance.getMixtapeItem(mixtapeId, dbMixtapeItem -> mixtapeItem.postValue(dbMixtapeItem));
+        songsLoadingState.setValue(SongsState.loading);
+
+        Model.instance.getMixtapeItem(mixtapeId, dbMixtapeItem -> {
+            mixtapeItem.postValue(dbMixtapeItem);
+        });
     }
 
     public LiveData<MixtapeItem> getMixtapeItem() {

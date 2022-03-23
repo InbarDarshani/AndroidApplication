@@ -18,7 +18,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
 
 import android.provider.MediaStore;
@@ -55,7 +54,7 @@ public class AddSongFragment extends Fragment {
     ArrayAdapter<String> adapter;
     AutoCompleteTextView song_mixtape_name_actv;
     TextInputLayout song_mixtape_name_til, song_mixtape_description_til;
-    Button song_post_btn;
+    Button song_submit_btn;
     ProgressBar progressBar;
     Bitmap inputImage;
     String inputSongName, inputArtist, inputCaption, inputNewMixtapeName, inputNewMixtapeDescription, currentUserId;
@@ -83,17 +82,17 @@ public class AddSongFragment extends Fragment {
         song_mixtape_name_til = view.findViewById(R.id.song_mixtape_name_til);
         song_mixtape_name_actv = view.findViewById(R.id.song_mixtape_name_actv);
         song_mixtape_description_til = view.findViewById(R.id.song_mixtape_description_til);
-        song_post_btn = view.findViewById(R.id.song_post_btn);
-        progressBar = view.findViewById(R.id.add_song_progressbar);
+        song_submit_btn = view.findViewById(R.id.song_submit_btn);
+        progressBar = view.findViewById(R.id.song_progressbar);
 
         //Setup buttons listeners
-        song_post_btn.setOnClickListener(v -> validateAndSave());
+        song_submit_btn.setOnClickListener(v -> validateAndSave());
         song_cam_btn.setOnClickListener(v -> openCam());
         song_gallery_btn.setOnClickListener(v -> openGallery());
 
         //Setup alert dialog
         alert = new MaterialAlertDialogBuilder(this.getContext());
-        alert.setTitle("Missing Fields");
+        alert.setTitle("Input Error");
 
         //Setup user's mixtapes list
         adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line);
@@ -191,7 +190,7 @@ public class AddSongFragment extends Fragment {
 
     private void saveToDb() {
         progressBar.setVisibility(View.VISIBLE);
-        song_post_btn.setEnabled(false);
+        song_submit_btn.setEnabled(false);
         song_cam_btn.setEnabled(false);
         song_gallery_btn.setEnabled(false);
         song_mixtape_name_actv.setEnabled(false);
@@ -219,14 +218,12 @@ public class AddSongFragment extends Fragment {
     }
 
     private void toSongDetails(String songId) {
-        //TOCHECK:!!
         //Remove this fragment from back stack and navigate to the created song details
         FragmentManager manager = getParentFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
         transaction.remove(this);
         transaction.commit();
         manager.popBackStack();
-        //Navigation.findNavController(song_name_et).navigate(AddSongFragmentDirections.actionGlobalSongDetailsFragment(songId));
         Navigation.findNavController(song_name_et).navigate(NavGraphDirections.actionGlobalSongDetailsFragment(songId));
     }
 }

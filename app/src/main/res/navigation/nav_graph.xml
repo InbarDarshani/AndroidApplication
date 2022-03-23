@@ -30,7 +30,7 @@
     </fragment>
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.example.mixtape.app.UserFragment"
+        android:name="com.example.mixtape.app.ProfileFragment"
         android:label="Profile"
         tools:layout="@layout/fragment_user">
         <argument
@@ -42,6 +42,7 @@
         app:destination="@id/profileFragment"
         app:popUpTo="@id/profileFragment"
         app:popUpToInclusive="true" />
+
     <fragment
         android:id="@+id/addSongFragment"
         android:name="com.example.mixtape.app.AddSongFragment"
@@ -55,6 +56,7 @@
         app:destination="@id/feedFragment"
         app:popUpTo="@id/feedFragment"
         app:popUpToInclusive="true" />
+
     <fragment
         android:id="@+id/mixtapeDetailsFragment"
         android:name="com.example.mixtape.app.MixtapeDetailsFragment"
@@ -73,6 +75,7 @@
             android:id="@+id/action_mixtapeDetailsFragment_to_userFragment"
             app:destination="@id/userFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/editSongFragment"
         android:name="com.example.mixtape.app.EditSongFragment"
@@ -82,11 +85,12 @@
             android:name="songId"
             app:argType="string" />
     </fragment>
+
     <fragment
         android:id="@+id/editMixtapeFragment"
         android:name="com.example.mixtape.app.EditMixtapeFragment"
         android:label="Edit Mixtape"
-        tools:layout="@layout/fragment_edit_mixtape">
+        tools:layout="@layout/fragment_add_edit_mixtape">
         <argument
             android:name="mixtapeId"
             app:argType="string" />
@@ -97,13 +101,22 @@
     <action
         android:id="@+id/action_global_mixtapeDetailsFragment"
         app:destination="@id/mixtapeDetailsFragment" />
+
     <fragment
         android:id="@+id/userFragment"
-        android:name="com.example.mixtape.app.ProfileFragment"
+        android:name="com.example.mixtape.app.UserFragment"
         android:label="User"
         tools:layout="@layout/fragment_user">
         <argument
             android:name="userId"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/addMixtapeFragment"
+        android:name="com.example.mixtape.app.AddMixtapeFragment"
+        android:label="New Mixtape"
+        tools:layout="@layout/fragment_add_edit_mixtape" />
+    <action
+        android:id="@+id/action_global_addMixtapeFragment"
+        app:destination="@id/addMixtapeFragment" />
 </navigation>

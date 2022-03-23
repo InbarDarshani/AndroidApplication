@@ -73,8 +73,8 @@ public class EditSongFragment extends Fragment {
         //Inflate the layout for this fragment using add song fragment layout
         View view = inflater.inflate(R.layout.fragment_add_edit_song, container, false);
         //Edit page view
-        ((TextView) view.findViewById(R.id.page_title_tv)).setText("Edit Song");
-        ((Button) view.findViewById(R.id.song_post_btn)).setText("Save");
+        ((TextView) view.findViewById(R.id.song_add_edit_page_title_tv)).setText("Edit Song");
+        ((Button) view.findViewById(R.id.song_submit_btn)).setText("Save");
 
         //Get views
         song_image_iv = view.findViewById(R.id.song_image_iv);
@@ -86,8 +86,8 @@ public class EditSongFragment extends Fragment {
         song_mixtape_name_til = view.findViewById(R.id.song_mixtape_name_til);
         song_mixtape_name_actv = view.findViewById(R.id.song_mixtape_name_actv);
         song_mixtape_description_til = view.findViewById(R.id.song_mixtape_description_til);
-        song_post_btn = view.findViewById(R.id.song_post_btn);
-        progressBar = view.findViewById(R.id.add_song_progressbar);
+        song_post_btn = view.findViewById(R.id.song_submit_btn);
+        progressBar = view.findViewById(R.id.song_progressbar);
 
         viewModel.getSongItem().observe(getViewLifecycleOwner(), songItem -> {
             bind();
@@ -117,7 +117,7 @@ public class EditSongFragment extends Fragment {
 
         //Setup alert dialog
         alert = new MaterialAlertDialogBuilder(this.getContext());
-        alert.setTitle("Missing Fields");
+        alert.setTitle("Input Error");
 
         //Setup user's mixtapes list
         adapter = new ArrayAdapter<>(MyApplication.getContext(), android.R.layout.simple_dropdown_item_1line);
@@ -232,26 +232,25 @@ public class EditSongFragment extends Fragment {
 
         //Update Song with image and new mixtape
         if (inputImage != null && inputChosenMixtape == null) {
-            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> back(dbSong.getSongId()));
+            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), inputImage, dbSong -> back());
         }
         //Update Song with image and existing mixtape
         if (inputImage != null && inputChosenMixtape != null) {
             song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.updateSong(song, inputImage, dbSong -> back(dbSong.getSongId()));
+            Model.instance.updateSong(song, inputImage, dbSong -> back());
         }
         //Update Song with no image and new mixtape
         if (inputImage == null && inputChosenMixtape == null) {
-            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> back(dbSong.getSongId()));
+            Model.instance.updateSong(song, new Mixtape(inputNewMixtapeName, inputNewMixtapeDescription, currentUserId), dbSong -> back());
         }
         //Update Song with no image and existing mixtape
         if (inputImage == null && inputChosenMixtape != null) {
             song.setMixtapeId(inputChosenMixtape.getMixtapeId());
-            Model.instance.updateSong(song, dbSong -> back(dbSong.getSongId()));
+            Model.instance.updateSong(song, dbSong -> back());
         }
     }
 
-    private void back(String songId) {
-        //TODO:
+    private void back() {
         Navigation.findNavController(song_name_et).navigateUp();
     }
 }

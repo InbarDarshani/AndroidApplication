@@ -106,7 +106,8 @@ public class SongDetailsFragment extends Fragment {
             song_delete.setVisibility(View.VISIBLE);
 
             song_edit.setOnClickListener(v -> {
-                Navigation.findNavController(v).navigate(SongDetailsFragmentDirections.actionSongDetailsFragmentToEditSongFragment(viewModel.getSong().getSongId()));
+                Navigation.findNavController(v).navigate(
+                        SongDetailsFragmentDirections.actionSongDetailsFragmentToEditSongFragment(viewModel.getSong().getSongId()));
             });
 
             song_delete.setOnClickListener(v -> {

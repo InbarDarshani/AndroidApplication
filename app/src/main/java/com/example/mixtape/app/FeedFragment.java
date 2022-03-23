@@ -121,8 +121,7 @@ public class FeedFragment extends Fragment {
 
             //Sets row listeners
             itemView.setOnClickListener(v -> {
-                int pos = getAdapterPosition();
-                listener.onItemClick(v, pos);
+                listener.onItemClick(v, getAdapterPosition());
             });
         }
 

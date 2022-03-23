@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/mixtaperow_song_checkable_cb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"/>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="5dp"
+        android:src="@drawable/icon_note" />
+
+    <TextView
+        android:id="@+id/mixtaperow_song_checkable_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="10dp"
+        android:text="Song" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

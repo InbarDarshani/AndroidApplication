@@ -33,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.mixtape.MyApplication;
+import com.example.mixtape.NavGraphDirections;
 import com.example.mixtape.R;
 import com.example.mixtape.model.MixtapeItem;
 import com.example.mixtape.model.Model;
@@ -47,10 +48,10 @@ public class UserFragment extends Fragment {
     RecyclerView list;
     ListAdapter adapter;
     SwipeRefreshLayout swipeRefresh;
-    ImageView profile_user_iv;
-    TextView profile_empty_tv;
-    ImageButton profile_gallery_btn, profile_cam_btn, profile_edit_name_btn, profile_save_name_btn, profile_cancel_name_btn;
-    EditText profile_user_et;
+    ImageView user_image_iv;
+    TextView user_empty_list_tv;
+    ImageButton profile_gallery_btn, profile_cam_btn, profile_edit_name_btn, profile_save_name_btn, profile_cancel_name_btn, profile_add_mixtape_btn;
+    EditText user_name_et;
     ProgressBar profile_save_progressbar;
     Bitmap inputImage;
 
@@ -68,20 +69,21 @@ public class UserFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_user, container, false);
 
         //Get views
-        profile_user_iv = view.findViewById(R.id.profile_user_iv);
-        profile_user_et = view.findViewById(R.id.profile_user_et);
-        profile_empty_tv = view.findViewById(R.id.profile_empty_tv);
+        user_image_iv = view.findViewById(R.id.user_image_iv);
+        user_name_et = view.findViewById(R.id.user_name_et);
+        user_empty_list_tv = view.findViewById(R.id.user_empty_list_tv);
         profile_gallery_btn = view.findViewById(R.id.profile_gallery_btn);
         profile_cam_btn = view.findViewById(R.id.profile_cam_btn);
         profile_edit_name_btn = view.findViewById(R.id.profile_edit_name_btn);
         profile_save_name_btn = view.findViewById(R.id.profile_save_name_btn);
         profile_cancel_name_btn = view.findViewById(R.id.profile_cancel_name_btn);
         profile_save_progressbar = view.findViewById(R.id.profile_save_progressbar);
+        profile_add_mixtape_btn = view.findViewById(R.id.profile_add_mixtape_btn);
 
-        //Set current user's data
+        //Set user's data
         if (!viewModel.getUser().getImage().isEmpty())
-            Picasso.get().load(viewModel.getUser().getImage()).into(profile_user_iv);
-        profile_user_et.setText(viewModel.getUser().getDisplayName());
+            Picasso.get().load(viewModel.getUser().getImage()).into(user_image_iv);
+        user_name_et.setText(viewModel.getUser().getDisplayName());
 
         //Setup refresh view, attach OnRefresh function, set refreshing state according to Model's loading state
         swipeRefresh = view.findViewById(R.id.profile_swiperefresh);
@@ -89,7 +91,7 @@ public class UserFragment extends Fragment {
         swipeRefresh.setRefreshing(Model.instance.getProfileLoadingState().getValue() == Model.ProfileState.loading);
 
         //Set list and adapter
-        list = view.findViewById(R.id.profile_rv);
+        list = view.findViewById(R.id.user_rv);
         list.setHasFixedSize(true);
         list.setLayoutManager(new LinearLayoutManager(MyApplication.getContext()));
         adapter = new ListAdapter();
@@ -116,10 +118,10 @@ public class UserFragment extends Fragment {
             //Treat an empty list state
             if (profileLoadingState == Model.ProfileState.empty) {
                 list.setVisibility(View.GONE);
-                profile_empty_tv.setVisibility(View.VISIBLE);
+                user_empty_list_tv.setVisibility(View.VISIBLE);
             } else {
                 list.setVisibility(View.VISIBLE);
-                profile_empty_tv.setVisibility(View.GONE);
+                user_empty_list_tv.setVisibility(View.GONE);
             }
         });
 
@@ -146,16 +148,16 @@ public class UserFragment extends Fragment {
         profile_cam_btn.setVisibility(View.VISIBLE);
         profile_gallery_btn.setVisibility(View.VISIBLE);
         profile_edit_name_btn.setVisibility(View.VISIBLE);
+        profile_add_mixtape_btn.setVisibility(View.VISIBLE);
 
         //Setup buttons listeners
         profile_cam_btn.setOnClickListener(v -> openCam());
         profile_gallery_btn.setOnClickListener(v -> openGallery());
+        profile_add_mixtape_btn.setOnClickListener(v -> Navigation.findNavController(v).navigate(NavGraphDirections.actionGlobalAddMixtapeFragment()));
 
         //Edit username button
         profile_edit_name_btn.setOnClickListener(v -> {
-            //profile_user_et.setFocusable(true);
-            //profile_user_et.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL);
-            profile_user_et.setEnabled(true);
+            user_name_et.setEnabled(true);
             profile_edit_name_btn.setVisibility(View.GONE);
             profile_cancel_name_btn.setVisibility(View.VISIBLE);
             profile_save_name_btn.setVisibility(View.VISIBLE);
@@ -164,9 +166,9 @@ public class UserFragment extends Fragment {
         //Save username button
         profile_save_name_btn.setOnClickListener(v -> {
             profile_save_progressbar.setVisibility(View.VISIBLE);
-            String inputUserName = profile_user_et.getText().toString();
-            if (inputUserName.isEmpty()){
-                Toast.makeText(MyApplication.getContext(), "Cant save empty name",  Toast.LENGTH_LONG).show();
+            String inputUserName = user_name_et.getText().toString();
+            if (inputUserName.isEmpty()) {
+                Toast.makeText(MyApplication.getContext(), "Cant save empty name", Toast.LENGTH_LONG).show();
                 return;
             }
             viewModel.getUser().setDisplayName(inputUserName);
@@ -179,10 +181,8 @@ public class UserFragment extends Fragment {
 
         //Cancel username button
         profile_cancel_name_btn.setOnClickListener(v -> {
-            profile_user_et.setText(viewModel.getUser().getDisplayName());
-            //profile_user_et.setFocusable(false);
-            //profile_user_et.setInputType(InputType.TYPE_NULL);
-            profile_user_et.setEnabled(false);
+            user_name_et.setText(viewModel.getUser().getDisplayName());
+            user_name_et.setEnabled(false);
             profile_edit_name_btn.setVisibility(View.VISIBLE);
             profile_cancel_name_btn.setVisibility(View.GONE);
             profile_save_name_btn.setVisibility(View.GONE);
@@ -211,8 +211,7 @@ public class UserFragment extends Fragment {
 
             //Sets row listeners
             itemView.setOnClickListener(v -> {
-                int pos = getAdapterPosition();
-                listener.onItemClick(v, pos);
+                listener.onItemClick(v, getAdapterPosition());
             });
         }
 
@@ -283,12 +282,12 @@ public class UserFragment extends Fragment {
                         }
                         //Convert bitmap image to thumbnail and set in view
                         if (bitmap != null) {
-                            int wScale = (bitmap.getWidth() > profile_user_iv.getWidth()) ? bitmap.getWidth() / profile_user_iv.getWidth() : 1;
-                            int hScale = (bitmap.getHeight() > profile_user_iv.getHeight()) ? bitmap.getHeight() / profile_user_iv.getHeight() : 1;
+                            int wScale = (bitmap.getWidth() > user_image_iv.getWidth()) ? bitmap.getWidth() / user_image_iv.getWidth() : 1;
+                            int hScale = (bitmap.getHeight() > user_image_iv.getHeight()) ? bitmap.getHeight() / user_image_iv.getHeight() : 1;
                             int w = bitmap.getWidth() / wScale;
                             int h = bitmap.getHeight() / hScale;
                             inputImage = Bitmap.createScaledBitmap(bitmap, w, h, false);
-                            profile_user_iv.setImageBitmap(inputImage);
+                            user_image_iv.setImageBitmap(inputImage);
 
                             //Save image to user
                             Model.instance.uploadUserImage(inputImage, viewModel.getUser(), user -> {

@@ -32,6 +32,9 @@ public interface SongDao {
     @Query("SELECT * FROM Song WHERE songId = :songId")
     Song getOneById(String songId);
 
+    @Query("SELECT * FROM Song WHERE  userId = :userId")
+    List<Song> getManyByUserId(String userId);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertMultiple(Song... songs);
 
@@ -40,4 +43,5 @@ public interface SongDao {
 
     @Delete
     void delete(Song song);
+
 }
