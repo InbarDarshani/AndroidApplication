@@ -52,9 +52,6 @@ public class ModelFirebase {
         return mAuth.getCurrentUser();
     }
 
-
-
-
     public void signIn(String email, String password, Model.UserProcess listener) {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
@@ -145,7 +142,22 @@ public class ModelFirebase {
                     @Override
                     public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
                         if (error != null) {
-                            Log.d("TAG", "Firebase - Listen failed" + "\n\t" + error);
+                            Log.d("TAG", "Firebase - Songs Listen failed" + "\n\t" + error);
+                            return;
+                        }
+
+                        Model.instance.refreshFeed();
+                    }
+                });
+    }
+
+    public void userRealTimeUpdate() {
+        db.collection(User.COLLECTION_NAME)
+                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            Log.d("TAG", "Firebase - Users Listen failed" + "\n\t" + error);
                             return;
                         }
 

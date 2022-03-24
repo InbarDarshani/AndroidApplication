@@ -156,7 +156,8 @@ public class Model {
     public LiveData<List<SongItem>> getFeed() {
         if (feed.getValue() == null) {
             refreshFeed();
-            modelFirebase.songsRealTimeUpdate();    //Activate db collection listener
+            modelFirebase.songsRealTimeUpdate();    //Activate db songs collection listener
+            modelFirebase.userRealTimeUpdate();    //Activate db users collection listener
         }
         return feed;
     }
