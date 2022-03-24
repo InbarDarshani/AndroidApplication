@@ -18,9 +18,6 @@ public interface MixtapeDao {
     @Query("SELECT * FROM Mixtape WHERE mixtapeId = :mixtapeId")
     Mixtape getOneById(String mixtapeId);
 
-    @Query("SELECT * FROM Mixtape WHERE mixtapeId IN(:mixtapeIds)")
-    List<Mixtape> getManyByIds(List<String> mixtapeIds);
-
     @Query("SELECT * FROM Mixtape WHERE  userId = :userId")
     List<Mixtape> getManyByUserId(String userId);
 
