@@ -472,6 +472,7 @@ public class Model {
         modelFirebase.getFeedDeletedSongs(localLastUpdate, deletedSongs -> {
             Log.d("TAG", "Model - firebase returned " + deletedSongs.size() + " deleted songs to feed");
             executor.execute(() -> deletedSongs.forEach(s -> AppLocalDb.db.songDao().delete(s)));
+            executor.execute(() -> feed.postValue(constructFeedItems()));
         });
 
         //Firebase get all new songs since lastLocalUpdateDate
