@@ -113,11 +113,8 @@ public class AddSongFragment extends Fragment {
             song_submit_btn.setEnabled(true);
             song_cam_btn.setEnabled(true);
             song_gallery_btn.setEnabled(true);
+            song_mixtape_name_til.setEnabled(true);
             song_mixtape_name_actv.setEnabled(true);
-            if (mixtapeItems.isEmpty())
-                song_mixtape_name_til.setEnabled(false);
-            else
-                song_mixtape_name_til.setEnabled(true);
         });
 
         return view;

@@ -126,11 +126,8 @@ public class EditSongFragment extends Fragment {
             song_mixtape_name_actv.setAdapter(adapter);
 
             //Enable clickables
+            song_mixtape_name_til.setEnabled(true);
             song_mixtape_name_actv.setEnabled(true);
-            if (mixtapeItems.isEmpty())
-                song_mixtape_name_til.setEnabled(false);
-            else
-                song_mixtape_name_til.setEnabled(true);
         });
 
         return view;

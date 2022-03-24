@@ -57,7 +57,6 @@ public class FeedFragment extends Fragment {
         list.setHasFixedSize(true);
         list.setLayoutManager(new LinearLayoutManager(MyApplication.getContext()));
         adapter = new ListAdapter();
-        list.setAdapter(adapter);
 
         //Create the row items on click listener
         adapter.setOnItemClickListener((v, position) -> {
@@ -68,11 +67,10 @@ public class FeedFragment extends Fragment {
         });
 
         //Setup observer for ViewModel's livedata, set OnChange action
-        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> adapter.notifyDataSetChanged());
+        viewModel.getSongItems().observe(getViewLifecycleOwner(), songItems -> list.setAdapter(adapter));
 
         //Setup observer for Model's feed loading state
         Model.instance.getFeedLoadingState().observe(getViewLifecycleOwner(), feedLoadingState -> {
-            adapter.notifyDataSetChanged();
 
             //Change SwipeRefreshLayout according to loading state
             swipeRefresh.setRefreshing(feedLoadingState == Model.FeedState.loading);
@@ -81,7 +79,9 @@ public class FeedFragment extends Fragment {
             if (feedLoadingState == Model.FeedState.empty) {
                 list.setVisibility(View.GONE);
                 feed_empty_tv.setVisibility(View.VISIBLE);
-            } else {
+            }
+            if (feedLoadingState == Model.FeedState.loaded) {
+                adapter.notifyDataSetChanged();
                 list.setVisibility(View.VISIBLE);
                 feed_empty_tv.setVisibility(View.GONE);
             }
@@ -126,7 +126,7 @@ public class FeedFragment extends Fragment {
 
         void bind(SongItem songItem) {
             //Bind Mixtape data of this song post
-            feedrow_mixtape_tv.setText(songItem.mixtape.getName());
+            feedrow_mixtape_tv.setText(songItem.getMixtape().getName());
 
             //Bind User data of this song post
             feedrow_profile_iv.setImageResource(R.drawable.empty_user_image_colored);
@@ -137,10 +137,10 @@ public class FeedFragment extends Fragment {
             //Bind song's data
             feedrow_photo_iv.setImageResource(R.drawable.empty_song_image);
             if (!songItem.song.getImage().isEmpty())
-                Picasso.get().load(songItem.song.getImage()).into(feedrow_photo_iv);
-            feedrow_song_tv.setText(songItem.song.getName());
-            feedrow_artist_tv.setText(songItem.song.getArtist());
-            feedrow_caption_tv.setText(songItem.song.getCaption());
+                Picasso.get().load(songItem.getSong().getImage()).into(feedrow_photo_iv);
+            feedrow_song_tv.setText(songItem.getSong().getName());
+            feedrow_artist_tv.setText(songItem.getSong().getArtist());
+            feedrow_caption_tv.setText(songItem.getSong().getCaption());
         }
     }
 

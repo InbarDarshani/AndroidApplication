@@ -18,6 +18,9 @@ public interface UserDao {
     @Query("SELECT * FROM User WHERE userId = :userId")
     User getOneById(String userId);
 
+    @Query("SELECT * FROM User WHERE userId IN(:userIds)")
+    List<User> getManyByIds(List<String> userIds);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertMultiple(User... users);
 
