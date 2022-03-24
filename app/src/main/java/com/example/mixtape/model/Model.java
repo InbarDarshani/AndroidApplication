@@ -525,14 +525,17 @@ public class Model {
     //Construct feed song items objects from local db
     private List<SongItem> constructFeedItems() {
         List<SongItem> items = new LinkedList<>();
-        List<Song> songs = AppLocalDb.db.songDao().getAll();
+        List<Song> localSongs = AppLocalDb.db.songDao().getAll();
 
-        for (Song song : songs) {
-            if (!song.isDeleted()) {
-                Mixtape mixtape = AppLocalDb.db.mixtapeDao().getOneById(song.getMixtapeId());
-                User user = AppLocalDb.db.userDao().getOneById(song.getUserId());
-                SongItem songItem = new SongItem(song, mixtape, user);
-                items.add(songItem);
+        for (Song localSong : localSongs) {
+            if (!localSong.isDeleted() && localSong != null) {
+                Mixtape localMixtape = AppLocalDb.db.mixtapeDao().getOneById(localSong.getMixtapeId());
+                User localUser = AppLocalDb.db.userDao().getOneById(localSong.getUserId());
+
+                if (localMixtape != null && localUser != null) {
+                    SongItem songItem = new SongItem(localSong, localMixtape, localUser);
+                    items.add(songItem);
+                }
             }
         }
 
@@ -544,14 +547,17 @@ public class Model {
     //Construct user mixtape items objects from local db
     private List<MixtapeItem> constructUserMixtapeItems(String userId) {
         List<MixtapeItem> items = new LinkedList<>();
-        List<Mixtape> mixtapes = AppLocalDb.db.mixtapeDao().getManyByUserId(userId);
-        User user = AppLocalDb.db.userDao().getOneById(userId);
+        List<Mixtape> localMixtapes = AppLocalDb.db.mixtapeDao().getManyByUserId(userId);
+        User localUser = AppLocalDb.db.userDao().getOneById(userId);
 
-        for (Mixtape mixtape : mixtapes) {
-            if (!mixtape.isDeleted()) {
-                List<Song> songs = AppLocalDb.db.songDao().getAllByMixtapeId(mixtape.getMixtapeId());
-                MixtapeItem mixtapeItem = new MixtapeItem(mixtape, songs, user);
-                items.add(mixtapeItem);
+        for (Mixtape localMixtape : localMixtapes) {
+            if (!localMixtape.isDeleted() && localMixtape != null) {
+                List<Song> locaMixtapeSongs = AppLocalDb.db.songDao().getAllByMixtapeId(localMixtape.getMixtapeId());
+
+                if (locaMixtapeSongs != null && localUser != null) {
+                    MixtapeItem mixtapeItem = new MixtapeItem(localMixtape, locaMixtapeSongs, localUser);
+                    items.add(mixtapeItem);
+                }
             }
         }
 
