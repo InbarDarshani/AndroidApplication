@@ -142,7 +142,7 @@ public class AddSongFragment extends Fragment {
         //Validate Input
         if (inputSongName.isEmpty())
             alert.setMessage("Please enter song's name").show();
-        else if (inputNewMixtapeName.isEmpty() || inputChosenMixtape == null)
+        else if (inputNewMixtapeName.isEmpty())
             alert.setMessage("Please choose or create mixtape").show();
         else
             saveToDb();
